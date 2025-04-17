@@ -10,14 +10,14 @@ type APIConfig struct {
 
 // Config holds all configuration into one place
 type Config struct {
-	apiConfig *APIConfig
+	ApiConfig *APIConfig
 }
 
 // NewConfig creates Config instance by
 // reading environment variables.
 func NewConfig() *Config {
 	return &Config{
-		apiConfig: &APIConfig{
+		ApiConfig: &APIConfig{
 			ServerAddr: getEnvVar("SERVER_ADDR", ":8080"),
 		},
 	}
