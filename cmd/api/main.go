@@ -3,6 +3,7 @@ package main
 import (
 	"api/config"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
 )
 
@@ -15,6 +16,12 @@ type API struct {
 // start mounts the handlers and binds the app to the specified port.
 func (a *API) start() error {
 	app := fiber.New()
+
+	// If the api is for debug add logger for easier development.
+	if a.Conf.ApiConfig.IsDebug {
+		app.Use(logger.New())
+	}
+
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }
 
