@@ -31,7 +31,7 @@ type JWTAuthenticator struct {
 }
 
 // CreateToken creates a new access token and signs it.
-func (a *JWTAuthenticator) CreateToken(sub uuid.UUID, role models.UserType, tokenType TokenType, exp time.Time) (string, error) {
+func (a *JWTAuthenticator) CreateToken(sub, id uuid.UUID, role models.UserType, tokenType TokenType, exp time.Time) (string, error) {
 	claims := Claims{
 		TokenType: tokenType,
 		Role:      role,
@@ -42,6 +42,7 @@ func (a *JWTAuthenticator) CreateToken(sub uuid.UUID, role models.UserType, toke
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(exp),
 			NotBefore: jwt.NewNumericDate(time.Now()),
+			ID:        id.String(),
 		},
 	}
 

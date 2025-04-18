@@ -18,11 +18,12 @@ func TestJWTAuthenticatorCreateToken(t *testing.T) {
 	}
 
 	sub := uuid.New()
+	id := uuid.New()
 	role := models.Client
 	tokenType := AccessToken
 	exp := time.Now().Add(time.Hour)
 
-	token, err := authenticator.CreateToken(sub, role, tokenType, exp)
+	token, err := authenticator.CreateToken(sub, id, role, tokenType, exp)
 	if err != nil {
 		t.Errorf("Error creating token: %v", err)
 	}
@@ -47,5 +48,8 @@ func TestJWTAuthenticatorCreateToken(t *testing.T) {
 	}
 	if claims.Subject != sub.String() {
 		t.Errorf("Subject mismatch")
+	}
+	if claims.ID != id.String() {
+		t.Errorf("ID mismatch")
 	}
 }
