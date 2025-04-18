@@ -19,9 +19,9 @@ type UserRepository interface {
 	// Return true if they are in use or a database error.
 	CheckEmailAndUsername(ctx context.Context, email string, username string) (bool, error)
 
-	// GetUserByUsername gets an user by specified username.
+	// GetUserByUsername gets a user by specified username.
 	//
-	// Returns an error if user with the specified username doesn't exist or there was a database error.
+	// Returns an error if a user with the specified username doesn't exist or there was a database error.
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
 }
 
@@ -112,7 +112,7 @@ func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username
 	return &user, err
 }
 
-// NewPostgresUserRepository creates new instance of PostgresUserRepository
+// NewPostgresUserRepository creates a new instance of PostgresUserRepository
 func NewPostgresUserRepository(db *sql.DB) *PostgresUserRepository {
 	return &PostgresUserRepository{
 		db: db,
