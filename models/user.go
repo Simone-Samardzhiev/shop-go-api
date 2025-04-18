@@ -1,0 +1,115 @@
+package models
+
+import (
+	"github.com/google/uuid"
+	"net/mail"
+	"unicode"
+)
+
+// RegisterClientPayload used by clients on registration.
+type RegisterClientPayload struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// Validate will check if the payload of the client is valid.
+func (payload *RegisterClientPayload) Validate() bool {
+	if !payload.validateEmail() {
+		return false
+	}
+
+	if len(payload.Username) < 8 {
+		return false
+	}
+
+	if !payload.validatePassword() {
+		return false
+	}
+
+	return true
+}
+
+func (payload *RegisterClientPayload) validateEmail() bool {
+	_, err := mail.ParseAddress(payload.Email)
+	return err == nil
+}
+
+func (payload *RegisterClientPayload) validatePassword() bool {
+	var (
+		// Is size more than 8
+		minSize = false
+		// Contains upper char
+		upper = false
+		// Contains lower char
+		lower = false
+		// Contain number
+		number = false
+		// Contains special char
+		special = false
+	)
+
+	if len(payload.Password) > 8 {
+		minSize = true
+	}
+
+	for _, c := range payload.Password {
+		switch {
+		case unicode.IsUpper(c):
+			upper = true
+		case unicode.IsLower(c):
+			lower = true
+		case unicode.IsNumber(c):
+			number = true
+		case unicode.IsPunct(c) || unicode.IsSymbol(c):
+			special = true
+		}
+	}
+
+	return minSize && upper && lower && number && special
+}
+
+// NewRegisterClientPayload creates a new instance of RegisterClientPayload
+func NewRegisterClientPayload(email string, username string, password string) *RegisterClientPayload {
+	return &RegisterClientPayload{
+		Email:    email,
+		Username: username,
+		Password: password,
+	}
+}
+
+// LoginUserPayload used by user on log in.
+type LoginUserPayload struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// UserType used to set the type of users
+type UserType = string
+
+const (
+	Admin    UserType = "admin"
+	Client   UserType = "user"
+	Delivery UserType = "delivery"
+	Workshop UserType = "workshop"
+)
+
+// User holds registered used data.
+type User struct {
+	Id       uuid.UUID
+	Email    string
+	Username string
+	Password string
+	UserType UserType
+}
+
+// NewUser create new instance of User
+func NewUser(id uuid.UUID, email string, username string, password string, userType UserType) *User {
+	return &User{
+		Id:       id,
+		Email:    email,
+		Username: username,
+		Password: password,
+		UserType: userType,
+	}
+}
