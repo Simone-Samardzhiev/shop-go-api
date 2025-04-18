@@ -56,3 +56,20 @@ func TestMemoryUserRepositoryCheckEmailAndUsername(t *testing.T) {
 		t.Errorf("User added with username: %s, but not found with username: %s ", user.Username, "username")
 	}
 }
+
+func TestMemoryUserRepositoryGetUserByUsername(t *testing.T) {
+	repo := NewMemoryUserRepository()
+	user := models.NewUser(uuid.New(), "email", "username", "password", models.Client)
+	err := repo.AddUser(context.Background(), user)
+	if err != nil {
+		t.Errorf("Error adding user: %v", err)
+	}
+
+	result, err := repo.GetUserByUsername(context.Background(), "username")
+	if err != nil {
+		t.Errorf("Error getting user by username: %v", err)
+	}
+	if *result != *user {
+		t.Errorf("Error getting user by username: %v, expected %v", user, result)
+	}
+}
