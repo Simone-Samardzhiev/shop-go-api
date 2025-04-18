@@ -13,6 +13,11 @@ type UserRepository interface {
 	//
 	// Returns an error if the user could not be added (e.g. duplicate entry or database error).
 	AddUser(ctx context.Context, user *models.User) error
+
+	// CheckEmailAndUsername checks if the email or the username are in use.
+	//
+	// Return true if they are in use or an database error.
+	CheckEmailAndUsername(ctx context.Context, email string, username string) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with slice of users.
@@ -38,6 +43,15 @@ func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) err
 	return nil
 }
 
+func (r *MemoryUserRepository) CheckEmailAndUsername(_ context.Context, email string, username string) (bool, error) {
+	for _, u := range r.users {
+		if u.Email == email || u.Username == username {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // PostgresUserRepository implements UserRepository using postgres.
 type PostgresUserRepository struct {
 	db *sql.DB
@@ -56,6 +70,18 @@ func (r *PostgresUserRepository) AddUser(ctx context.Context, user *models.User)
 	)
 
 	return err
+}
+
+func (r *PostgresUserRepository) CheckEmailAndUsername(ctx context.Context, email string, username string) (bool, error) {
+	row := r.db.QueryRowContext(
+		ctx,
+		`SELECT EXISTS( SELECT 1 FROM users WHERE email = $1 OR username = $2)`,
+		email,
+		username,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 // NewPostgresUserRepository creates new instance of PostgresUserRepository
