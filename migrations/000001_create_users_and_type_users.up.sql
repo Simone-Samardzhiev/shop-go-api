@@ -7,7 +7,7 @@ INSERT INTO user_types
 VALUES ('user'),     -- Customer placing orders
        ('admin'),    -- Admin having access to everything
        ('delivery'), -- Worker who delivers the orders to address
-       ('workshop'); -- Worker who receive the order, pick, pack and pass the order to delivery
+       ('workshop'); -- Worker who receives the order, pick, pack and pass the order to delivery
 
 CREATE TABLE IF NOT EXISTS users
 (

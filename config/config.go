@@ -67,7 +67,7 @@ func NewConfig() *Config {
 
 // getEnvVar is used to read environment variables.
 //
-// If a variable exists, the values are returned otherwise the result is teh fallback.
+// If a variable exists, the values are returned otherwise the result is the fallback.
 func getEnvVar(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
@@ -77,7 +77,7 @@ func getEnvVar(key, fallback string) string {
 
 // getEnvVarBool is a specialized version of getEnvVar for bool variables.
 //
-// If the variable exists, the value is returned by checking if the string equals true
+// If the variable exists, the value is returned by checking if the string equals true,
 // otherwise the fallback is returned.
 func getEnvVarBool(key string, fallback bool) bool {
 	if value, ok := os.LookupEnv(key); ok {
@@ -103,7 +103,7 @@ func getEnvVarInt(key string, fallback int) int {
 
 // getEnvVarDuration is a specialized version of getEnvVar for time.Duration variables.
 //
-// If the variable exists, and it is a valid int the value is parsed into duration and returned
+// If the variable exists, and it is a valid int, the value is parsed into duration and returned
 // otherwise the fallback is returned.
 func getEnvVarDuration(key string, fallback time.Duration) time.Duration {
 	if value, ok := os.LookupEnv(key); ok {

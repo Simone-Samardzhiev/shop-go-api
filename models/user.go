@@ -63,7 +63,7 @@ func (payload *RegisterClientPayload) validateEmail() bool {
 
 func (payload *RegisterClientPayload) validatePassword() bool {
 	var (
-		// Is size more than 8
+		// Size is more than 8
 		minSize = false
 		// Contains upper char
 		upper = false
@@ -104,7 +104,7 @@ func NewRegisterClientPayload(email string, username string, password string) *R
 	}
 }
 
-// LoginUserPayload used by user on log in.
+// LoginUserPayload used by user on login.
 type LoginUserPayload struct {
 	Username string `json:"username"`
 	Password string `json:"password"`

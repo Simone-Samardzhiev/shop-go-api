@@ -1,6 +1,7 @@
 package main
 
 import (
+	"api/auth"
 	"api/config"
 	"api/database"
 	"api/handlers"
@@ -52,6 +53,7 @@ func New() *API {
 			UserHandler: handlers.NewDefaultUserHandler(
 				services.NewDefaultUserService(
 					repositories.NewPostgresUserRepository(db),
+					auth.NewJWTAuthenticator(*conf.AuthConfig),
 				),
 			),
 		},
