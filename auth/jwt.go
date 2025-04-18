@@ -46,7 +46,7 @@ func (a *JWTAuthenticator) CreateToken(sub uuid.UUID, role models.UserType, toke
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(a.conf.JWTSecret)
+	signedToken, err := token.SignedString([]byte(a.conf.JWTSecret))
 	return signedToken, err
 }
 
