@@ -24,7 +24,7 @@ type API struct {
 func (a *API) start() error {
 	app := fiber.New()
 
-	// If the api is for debug add logger for easier development.
+	// If the api is for debug, add logger for easier development.
 	if a.Conf.ApiConfig.IsDebug {
 		app.Use(logger.New())
 	}
