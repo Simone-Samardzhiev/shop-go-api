@@ -89,7 +89,7 @@ type UserType = string
 
 const (
 	Admin    UserType = "admin"
-	Client   UserType = "user"
+	Client   UserType = "client"
 	Delivery UserType = "delivery"
 	Workshop UserType = "workshop"
 )
