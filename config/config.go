@@ -98,7 +98,7 @@ func getEnvVarDuration(key string, fallback time.Duration) time.Duration {
 		if err != nil {
 			return fallback
 		}
-		return time.Duration(result)
+		return time.Duration(result) * time.Second
 	}
 
 	return fallback
