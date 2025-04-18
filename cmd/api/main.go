@@ -8,6 +8,7 @@ import (
 	"api/services"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"log"
 )
@@ -58,7 +59,11 @@ func New() *API {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("Error loading .env file")
+	}
 	api := New()
-	err := api.start()
+	err = api.start()
 	log.Fatalf("Error starting the API with error: %v and configration: %+v", err, api.Conf)
 }
