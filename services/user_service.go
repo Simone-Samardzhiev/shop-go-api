@@ -1,6 +1,7 @@
 package services
 
 import (
+	"api/auth"
 	"api/models"
 	"api/repositories"
 	"api/utils"
@@ -31,7 +32,12 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload models.Registe
 		return utils.NewAPIError("User already exists", fiber.StatusConflict)
 	}
 
-	user := models.NewUser(uuid.New(), payload.Email, payload.Username, payload.Password, models.Client)
+	hash, err := auth.HashPassword(payload.Password)
+	if err != nil {
+		return utils.InternalServerAPIError()
+	}
+
+	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, models.Client)
 	err = s.repo.AddUser(ctx, user)
 	if err != nil {
 		return utils.InternalServerAPIError()
