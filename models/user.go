@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/google/uuid"
 	"net/mail"
+	"strings"
 	"unicode"
 )
 
@@ -31,8 +32,33 @@ func (payload *RegisterClientPayload) Validate() bool {
 }
 
 func (payload *RegisterClientPayload) validateEmail() bool {
-	_, err := mail.ParseAddress(payload.Email)
-	return err == nil
+	addr, err := mail.ParseAddress(payload.Email)
+	if err != nil {
+		return false
+	}
+
+	parts := strings.Split(addr.Address, "@")
+	if len(parts) != 2 {
+		return false
+	}
+
+	local, domain := parts[0], parts[1]
+
+	if local == "" || domain == "" {
+		return false
+	}
+
+	if !strings.Contains(domain, ".") {
+		return false
+	}
+
+	tldParts := strings.Split(domain, ".")
+	tld := tldParts[len(tldParts)-1]
+	if len(tld) < 2 {
+		return false
+	}
+
+	return true
 }
 
 func (payload *RegisterClientPayload) validatePassword() bool {
