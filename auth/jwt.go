@@ -30,8 +30,8 @@ type JWTAuthenticator struct {
 	conf config.AuthConfig
 }
 
-// CreateAccessToken creates a new access token and signs it.
-func (a *JWTAuthenticator) CreateAccessToken(sub uuid.UUID, role models.UserType, tokenType TokenType, exp time.Time) (string, error) {
+// CreateToken creates a new access token and signs it.
+func (a *JWTAuthenticator) CreateToken(sub uuid.UUID, role models.UserType, tokenType TokenType, exp time.Time) (string, error) {
 	claims := Claims{
 		TokenType: tokenType,
 		Role:      role,
