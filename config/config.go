@@ -28,6 +28,14 @@ type DatabaseConfig struct {
 	MaxLifetime time.Duration
 }
 
+// AuthConfig holds authentication configuration.
+type AuthConfig struct {
+	// JWTSecret used to sign the tokens.
+	JWTSecret string
+	// Issuer of the tokens.
+	Issuer string
+}
+
 // Config holds all configuration into one place
 type Config struct {
 	ApiConfig *APIConfig
@@ -73,9 +81,9 @@ func getEnvVarBool(key string, fallback bool) bool {
 	return fallback
 }
 
-// getEnvVarInt is specialized version of getEnvVar for int variables.
+// getEnvVarInt is a specialized version of getEnvVar for int variables.
 //
-// If the variable exist, and it is a valid int the value is returned otherwise
+// If the variable exists, and it is a valid int the value is returned otherwise
 // the fallback is returned
 func getEnvVarInt(key string, fallback int) int {
 	if value, ok := os.LookupEnv(key); ok {
