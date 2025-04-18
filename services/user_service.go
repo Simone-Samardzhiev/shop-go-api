@@ -12,17 +12,18 @@ import (
 
 // UserService defines method used to manage user business logic
 type UserService interface {
-	// AddUser used to save the user.
+	// AddClient used to save the user.
 	//
 	// Return utils.APIError if error appears otherwise nil
-	AddUser(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError
+	AddClient(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError
 }
 
+// DefaultUserService is default implementation of UserService.
 type DefaultUserService struct {
 	repo repositories.UserRepository
 }
 
-func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError {
+func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError {
 	if !payload.Validate() {
 		return utils.NewAPIError("Invalid User Payload", fiber.StatusBadRequest)
 	}
