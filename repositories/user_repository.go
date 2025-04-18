@@ -11,13 +11,18 @@ import (
 type UserRepository interface {
 	// AddUser stores a new user in the repository.
 	//
-	// Returns an error if the user could not be added (e.g. duplicate entry or database error).
+	// Returns an error if the user could not be added (e.g., duplicate entry or database error).
 	AddUser(ctx context.Context, user *models.User) error
 
 	// CheckEmailAndUsername checks if the email or the username are in use.
 	//
-	// Return true if they are in use or an database error.
+	// Return true if they are in use or a database error.
 	CheckEmailAndUsername(ctx context.Context, email string, username string) (bool, error)
+
+	// GetUserByUsername gets an user by specified username.
+	//
+	// Returns an error if user with the specified username doesn't exist or there was a database error.
+	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
 }
 
 // MemoryUserRepository implements UserRepository with slice of users.
@@ -52,6 +57,15 @@ func (r *MemoryUserRepository) CheckEmailAndUsername(_ context.Context, email st
 	return false, nil
 }
 
+func (r *MemoryUserRepository) GetUserByUsername(_ context.Context, username string) (*models.User, error) {
+	for _, u := range r.users {
+		if u.Username == username {
+			return &u, nil
+		}
+	}
+	return nil, sql.ErrNoRows
+}
+
 // PostgresUserRepository implements UserRepository using postgres.
 type PostgresUserRepository struct {
 	db *sql.DB
@@ -82,6 +96,20 @@ func (r *PostgresUserRepository) CheckEmailAndUsername(ctx context.Context, emai
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	row := r.db.QueryRowContext(
+		ctx,
+		`SELECT id, email, username, password, user_type
+		FROM users
+		WHERE username = $1`,
+		username,
+	)
+
+	var user models.User
+	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.UserType)
+	return &user, err
 }
 
 // NewPostgresUserRepository creates new instance of PostgresUserRepository
