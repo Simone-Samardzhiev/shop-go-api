@@ -9,7 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// UserService defines method used to manage user business logic
 type UserService interface {
+	// AddUser used to save the user.
+	//
+	// Return utils.APIError if error appears otherwise nil
 	AddUser(ctx context.Context, payload models.RegisterClientPayload) *utils.APIError
 }
 
