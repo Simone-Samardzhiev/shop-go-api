@@ -38,8 +38,9 @@ type AuthConfig struct {
 
 // Config holds all configuration into one place
 type Config struct {
-	ApiConfig *APIConfig
-	DbConfig  *DatabaseConfig
+	ApiConfig  *APIConfig
+	DbConfig   *DatabaseConfig
+	AuthConfig *AuthConfig
 }
 
 // NewConfig creates Config instance by
@@ -57,12 +58,16 @@ func NewConfig() *Config {
 			MaxLifetime:        getEnvVarDuration("MAX_LIFETIME", 5*time.Minute),
 			MaxIdleTime:        getEnvVarDuration("MAX_IDLE_TIME", 5*time.Minute),
 		},
+		AuthConfig: &AuthConfig{
+			JWTSecret: getEnvVar("JWT_SECRET", "secret"),
+			Issuer:    getEnvVar("JWT_ISSUER", "com.unknown"),
+		},
 	}
 }
 
 // getEnvVar is used to read environment variables.
 //
-// If variable exist the values is returned otherwise the result is teh fallback.
+// If a variable exists, the values are returned otherwise the result is teh fallback.
 func getEnvVar(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
@@ -70,9 +75,9 @@ func getEnvVar(key, fallback string) string {
 	return fallback
 }
 
-// getEnvVarBool is specialized version of getEnvVar for bool variables.
+// getEnvVarBool is a specialized version of getEnvVar for bool variables.
 //
-// If the variable exist the value is returned by checking if the string equals true
+// If the variable exists, the value is returned by checking if the string equals true
 // otherwise the fallback is returned.
 func getEnvVarBool(key string, fallback bool) bool {
 	if value, ok := os.LookupEnv(key); ok {
@@ -96,7 +101,7 @@ func getEnvVarInt(key string, fallback int) int {
 	return fallback
 }
 
-// getEnvVarDuration is specialized version of getEnvVar for time.Duration variables.
+// getEnvVarDuration is a specialized version of getEnvVar for time.Duration variables.
 //
 // If the variable exists, and it is a valid int the value is parsed into duration and returned
 // otherwise the fallback is returned.

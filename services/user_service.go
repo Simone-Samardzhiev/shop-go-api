@@ -18,7 +18,7 @@ type UserService interface {
 	AddClient(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError
 }
 
-// DefaultUserService is default implementation of UserService.
+// DefaultUserService is a default implementation of UserService.
 type DefaultUserService struct {
 	repo repositories.UserRepository
 }

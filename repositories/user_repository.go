@@ -27,7 +27,7 @@ type MemoryUserRepository struct {
 	users []models.User
 }
 
-// NewMemoryUserRepository creates new instance of MemoryUserRepository
+// NewMemoryUserRepository creates a new instance of MemoryUserRepository
 func NewMemoryUserRepository() *MemoryUserRepository {
 	return &MemoryUserRepository{users: make([]models.User, 0)}
 }
