@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"api/auth"
+	"api/config"
 	"api/models"
 	"api/repositories"
 	"api/services"
@@ -14,7 +16,11 @@ import (
 
 func setup() *DefaultUserHandler {
 	repo := repositories.NewMemoryUserRepository()
-	service := services.NewDefaultUserService(repo)
+	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
+		JWTSecret: "secret",
+		Issuer:    "issue",
+	})
+	service := services.NewDefaultUserService(repo, authenticator)
 	return NewDefaultUserHandler(service)
 }
 

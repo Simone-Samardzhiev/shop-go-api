@@ -11,7 +11,7 @@ func TestRegisterClientPayloadValidate(t *testing.T) {
 	}
 
 	testCases := []TestCase{
-		TestCase{
+		{
 			Id:       1,
 			Name:     "Valid RegisterClientPayload",
 			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "validUsername", "validPassword"),

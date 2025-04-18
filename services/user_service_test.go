@@ -1,6 +1,8 @@
 package services
 
 import (
+	"api/auth"
+	"api/config"
 	"api/models"
 	"api/repositories"
 	"context"
@@ -9,7 +11,11 @@ import (
 
 func TestDefaultUserServiceAddValidUser(t *testing.T) {
 	repo := repositories.NewMemoryUserRepository()
-	service := NewDefaultUserService(repo)
+	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
+		JWTSecret: "secret",
+		Issuer:    "issuer",
+	})
+	service := NewDefaultUserService(repo, authenticator)
 	user := models.NewRegisterClientPayload("validEmail@gmail.com", "ValidUsername", "ValidPassword_2")
 
 	err := service.AddClient(context.Background(), user)
@@ -25,7 +31,11 @@ func TestDefaultUserServiceAddValidUser(t *testing.T) {
 
 func TestDefaultUserServiceAddInvalidUser(t *testing.T) {
 	repo := repositories.NewMemoryUserRepository()
-	service := NewDefaultUserService(repo)
+	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
+		JWTSecret: "secret",
+		Issuer:    "issuer",
+	})
+	service := NewDefaultUserService(repo, authenticator)
 	user := models.NewRegisterClientPayload("valid.com", "ValidUsername", "ValidPassword_2")
 
 	err := service.AddClient(context.Background(), user)
