@@ -15,14 +15,14 @@ type UserService interface {
 	// AddUser used to save the user.
 	//
 	// Return utils.APIError if error appears otherwise nil
-	AddUser(ctx context.Context, payload models.RegisterClientPayload) *utils.APIError
+	AddUser(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError
 }
 
 type DefaultUserService struct {
 	repo repositories.UserRepository
 }
 
-func (s *DefaultUserService) AddUser(ctx context.Context, payload models.RegisterClientPayload) *utils.APIError {
+func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError {
 	if !payload.Validate() {
 		return utils.NewAPIError("Invalid User Payload", fiber.StatusBadRequest)
 	}
