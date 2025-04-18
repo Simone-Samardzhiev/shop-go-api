@@ -45,3 +45,8 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload models.Registe
 
 	return nil
 }
+
+// NewUserService return new instance of UserService.
+func NewUserService(repo repositories.UserRepository) UserService {
+	return &DefaultUserService{repo}
+}
