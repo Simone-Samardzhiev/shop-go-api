@@ -9,7 +9,7 @@ import (
 
 func TestDefaultUserServiceAddValidUser(t *testing.T) {
 	repo := repositories.NewMemoryUserRepository()
-	service := NewUserService(repo)
+	service := NewDefaultUserService(repo)
 	user := models.NewRegisterClientPayload("validEmail@gmail.com", "ValidUsername", "ValidPassword_2")
 
 	err := service.AddClient(context.Background(), user)
@@ -25,7 +25,7 @@ func TestDefaultUserServiceAddValidUser(t *testing.T) {
 
 func TestDefaultUserServiceAddInvalidUser(t *testing.T) {
 	repo := repositories.NewMemoryUserRepository()
-	service := NewUserService(repo)
+	service := NewDefaultUserService(repo)
 	user := models.NewRegisterClientPayload("valid.com", "ValidUsername", "ValidPassword_2")
 
 	err := service.AddClient(context.Background(), user)
