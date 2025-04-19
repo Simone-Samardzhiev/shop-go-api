@@ -7,8 +7,10 @@ import (
 	"api/handlers"
 	"api/repositories"
 	"api/services"
+	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"log"
@@ -31,10 +33,19 @@ func (a *API) start() error {
 	}
 
 	api := app.Group("/api/v1")
+	middleware := jwtware.New(jwtware.Config{
+		Claims: &auth.Claims{},
+		SigningKey: jwtware.SigningKey{
+			JWTAlg: jwt.SigningMethodHS256.Alg(),
+			Key:    []byte(a.Conf.AuthConfig.JWTSecret),
+		},
+	})
 
 	// Router related to users
 	userGroup := api.Group("/users")
 	userGroup.Post("/register/client", a.Handlers.UserHandler.RegisterClient())
+	userGroup.Post("/register/admin", middleware, a.Handlers.UserHandler.RegisterUser())
+
 	userGroup.Post("/login", a.Handlers.UserHandler.Login())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
