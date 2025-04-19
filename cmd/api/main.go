@@ -35,6 +35,7 @@ func (a *API) start() error {
 	// Router related to users
 	userGroup := api.Group("/users")
 	userGroup.Post("/register/client", a.Handlers.UserHandler.RegisterClient())
+	userGroup.Post("/login", a.Handlers.UserHandler.Login())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }
