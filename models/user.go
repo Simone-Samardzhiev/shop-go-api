@@ -95,6 +95,34 @@ func (payload *RegisterClientPayload) validatePassword() bool {
 	return minSize && upper && lower && number && special
 }
 
+// RegisterUserPayload extends RegisterClientPayload by providing UserType.
+//
+// The payload is used by an admin to register workers or in some cases clients.
+type RegisterUserPayload struct {
+	RegisterClientPayload
+	UserType UserType `json:"user_type"`
+}
+
+func (payload *RegisterUserPayload) Validate() bool {
+	if !payload.validateEmail() {
+		return false
+	}
+
+	if len(payload.UserType) < 8 {
+		return false
+	}
+
+	if !payload.validatePassword() {
+		return false
+	}
+
+	if payload.UserType != Admin && payload.UserType != Client && payload.UserType != Delivery && payload.UserType != Workshop {
+		return false
+	}
+
+	return true
+}
+
 // NewRegisterClientPayload creates a new instance of RegisterClientPayload
 func NewRegisterClientPayload(email string, username string, password string) *RegisterClientPayload {
 	return &RegisterClientPayload{
