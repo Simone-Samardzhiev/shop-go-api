@@ -53,6 +53,7 @@ func New() *API {
 			UserHandler: handlers.NewDefaultUserHandler(
 				services.NewDefaultUserService(
 					repositories.NewPostgresUserRepository(db),
+					repositories.NewPostgresTokenRepository(db),
 					auth.NewJWTAuthenticator(*conf.AuthConfig),
 				),
 			),

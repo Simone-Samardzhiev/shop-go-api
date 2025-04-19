@@ -15,12 +15,13 @@ import (
 )
 
 func setup() *DefaultUserHandler {
-	repo := repositories.NewMemoryUserRepository()
+	userRepository := repositories.NewMemoryUserRepository()
 	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
 		JWTSecret: "secret",
 		Issuer:    "issue",
 	})
-	service := services.NewDefaultUserService(repo, authenticator)
+	tokenRepository := repositories.NewMemoryTokenRepository()
+	service := services.NewDefaultUserService(userRepository, tokenRepository, authenticator)
 	return NewDefaultUserHandler(service)
 }
 

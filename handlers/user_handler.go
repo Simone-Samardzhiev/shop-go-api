@@ -8,8 +8,10 @@ import (
 
 // UserHandler defines methods that return handler related ot users.
 type UserHandler interface {
-	// RegisterClient return handler used by clients to register
+	// RegisterClient returns handler used by clients to register
 	RegisterClient() fiber.Handler
+	// Login returns handler used by all users to log in.
+	Login() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -32,6 +34,22 @@ func (h *DefaultUserHandler) RegisterClient() fiber.Handler {
 
 		c.Status(fiber.StatusCreated)
 		return nil
+	}
+}
+
+func (h *DefaultUserHandler) Login() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var payload *models.LoginUserPayload
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		tokens, apiError := h.service.Login(c.Context(), payload)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+		return c.Status(fiber.StatusOK).JSON(tokens)
 	}
 }
 

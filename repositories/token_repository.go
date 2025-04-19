@@ -50,3 +50,10 @@ func (r *PostgresTokenRepository) AddToken(ctx context.Context, token *models.To
 
 	return err
 }
+
+// NewPostgresTokenRepository returns new instance of PostgresTokenRepository
+func NewPostgresTokenRepository(db *sql.DB) *PostgresTokenRepository {
+	return &PostgresTokenRepository{
+		db: db,
+	}
+}
