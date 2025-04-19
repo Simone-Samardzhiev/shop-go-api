@@ -20,6 +20,11 @@ type UserService interface {
 	// Return utils.APIError if error appears otherwise nil
 	AddClient(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError
 
+	// AddUser used to save the user.
+	//
+	// Return utils.APIError if error appears otherwise nil
+	AddUser(ctx context.Context, payload *models.RegisterUserPayload) *utils.APIError
+
 	// Login used to check login user by returning refresh and access token.
 	//
 	// The credentials are checked, and if the tokens are successfully created, they are returned.
@@ -50,6 +55,29 @@ func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.Regi
 	}
 
 	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, models.Client)
+	if err = s.userRepository.AddUser(ctx, user); err != nil {
+		return utils.InternalServerAPIError()
+	}
+
+	return nil
+}
+
+func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.RegisterUserPayload) *utils.APIError {
+	if !payload.Validate() {
+		return utils.NewAPIError("Invalid User Payload", fiber.StatusBadRequest)
+	}
+
+	result, err := s.userRepository.CheckEmailAndUsername(ctx, payload.Email, payload.Username)
+	if result {
+		return utils.NewAPIError("User already exists", fiber.StatusConflict)
+	}
+
+	hash, err := auth.HashPassword(payload.Password)
+	if err != nil {
+		return utils.InternalServerAPIError()
+	}
+
+	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, payload.UserType)
 	if err = s.userRepository.AddUser(ctx, user); err != nil {
 		return utils.InternalServerAPIError()
 	}
