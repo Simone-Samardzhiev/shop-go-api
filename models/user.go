@@ -100,7 +100,7 @@ func (payload *RegisterClientPayload) validatePassword() bool {
 // The payload is used by an admin to register workers or in some cases clients.
 type RegisterUserPayload struct {
 	RegisterClientPayload
-	UserType UserRole `json:"user_type"`
+	UserRole UserRole `json:"user_role"`
 }
 
 func (payload *RegisterUserPayload) Validate() bool {
@@ -108,7 +108,7 @@ func (payload *RegisterUserPayload) Validate() bool {
 		return false
 	}
 
-	if len(payload.UserType) < 8 {
+	if len(payload.UserRole) < 8 {
 		return false
 	}
 
@@ -116,7 +116,7 @@ func (payload *RegisterUserPayload) Validate() bool {
 		return false
 	}
 
-	if payload.UserType != Admin && payload.UserType != Client && payload.UserType != Delivery && payload.UserType != Workshop {
+	if payload.UserRole != Admin && payload.UserRole != Client && payload.UserRole != Delivery && payload.UserRole != Workshop {
 		return false
 	}
 

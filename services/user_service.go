@@ -77,7 +77,7 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 		return utils.InternalServerAPIError()
 	}
 
-	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, payload.UserType)
+	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, payload.UserRole)
 	if err = s.userRepository.AddUser(ctx, user); err != nil {
 		return utils.InternalServerAPIError()
 	}
