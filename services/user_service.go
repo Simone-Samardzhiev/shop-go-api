@@ -85,7 +85,7 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 	return nil
 }
 
-func (s *DefaultUserService) createTokenGroup(ctx context.Context, sub uuid.UUID, role models.UserType) (*models.TokenGroup, *utils.APIError) {
+func (s *DefaultUserService) createTokenGroup(ctx context.Context, sub uuid.UUID, role models.UserRole) (*models.TokenGroup, *utils.APIError) {
 	token := models.NewToken(uuid.New(), sub, time.Now().Add(time.Hour*24*20))
 	if err := s.tokenRepository.AddToken(ctx, token); err != nil {
 		return nil, utils.InternalServerAPIError()

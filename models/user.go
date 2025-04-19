@@ -95,12 +95,12 @@ func (payload *RegisterClientPayload) validatePassword() bool {
 	return minSize && upper && lower && number && special
 }
 
-// RegisterUserPayload extends RegisterClientPayload by providing UserType.
+// RegisterUserPayload extends RegisterClientPayload by providing UserRole.
 //
 // The payload is used by an admin to register workers or in some cases clients.
 type RegisterUserPayload struct {
 	RegisterClientPayload
-	UserType UserType `json:"user_type"`
+	UserType UserRole `json:"user_type"`
 }
 
 func (payload *RegisterUserPayload) Validate() bool {
@@ -138,14 +138,14 @@ type LoginUserPayload struct {
 	Password string `json:"password"`
 }
 
-// UserType used to set the type of users
-type UserType = string
+// UserRole used to set the type of users
+type UserRole = string
 
 const (
-	Admin    UserType = "admin"
-	Client   UserType = "client"
-	Delivery UserType = "delivery"
-	Workshop UserType = "workshop"
+	Admin    UserRole = "admin"
+	Client   UserRole = "client"
+	Delivery UserRole = "delivery"
+	Workshop UserRole = "workshop"
 )
 
 // User holds registered used data.
@@ -154,11 +154,11 @@ type User struct {
 	Email    string
 	Username string
 	Password string
-	UserType UserType
+	UserType UserRole
 }
 
 // NewUser create new instance of User
-func NewUser(id uuid.UUID, email string, username string, password string, userType UserType) *User {
+func NewUser(id uuid.UUID, email string, username string, password string, userType UserRole) *User {
 	return &User{
 		Id:       id,
 		Email:    email,

@@ -21,7 +21,7 @@ const (
 // Claims is a custom implementation of jwt.Claims
 type Claims struct {
 	TokenType TokenType       `json:"token_type"`
-	Role      models.UserType `json:"role"`
+	Role      models.UserRole `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -31,7 +31,7 @@ type JWTAuthenticator struct {
 }
 
 // CreateToken creates a new access token and signs it.
-func (a *JWTAuthenticator) CreateToken(sub, id uuid.UUID, role models.UserType, tokenType TokenType, exp time.Time) (string, error) {
+func (a *JWTAuthenticator) CreateToken(sub, id uuid.UUID, role models.UserRole, tokenType TokenType, exp time.Time) (string, error) {
 	claims := Claims{
 		TokenType: tokenType,
 		Role:      role,
