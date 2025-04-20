@@ -138,6 +138,14 @@ type LoginUserPayload struct {
 	Password string `json:"password"`
 }
 
+// NewLoginUserPayload returns a new instance of LoginUserPayload.
+func NewLoginUserPayload(username string, password string) *LoginUserPayload {
+	return &LoginUserPayload{
+		Username: username,
+		Password: password,
+	}
+}
+
 // UserRole used to set the type of users
 type UserRole = string
 
