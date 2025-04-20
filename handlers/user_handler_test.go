@@ -216,6 +216,9 @@ func TestDefaultUserHandlerLogin(t *testing.T) {
 	}
 }
 
+// TestDefaultUserHandlerRegisterUser verifies that admin can successfully register
+// a new user. If the token that is sent is of auth.RefreshToken type,
+// the result should be http.StatusUnauthorized.
 func TestDefaultUserHandlerRegisterUser(t *testing.T) {
 	handler := SetUpWithAdmin()
 	app := fiber.New()
@@ -262,10 +265,21 @@ func TestDefaultUserHandlerRegisterUser(t *testing.T) {
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("Invalid response code: %v expected 201", resp.StatusCode)
 	}
+
+	req = httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(data))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token.RefreshToken)
+	resp, err = app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("Invalid response code: %v expected 401", resp.StatusCode)
+	}
 }
 
 // TestDefaultUserHandlerRegisterUserNotAdmin verifies that attempt to register
-// a new user with a role is not possible without admin token.
+// a new user with a role is not possible without an admin token.
 func TestDefaultUserHandlerRegisterUserNotAdmin(t *testing.T) {
 	handler := Setup()
 	app := fiber.New()

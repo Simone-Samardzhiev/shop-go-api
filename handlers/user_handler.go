@@ -48,7 +48,7 @@ func (h *DefaultUserHandler) RegisterUser() fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
 		}
 
-		if claims.Role != models.Admin {
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
 			return c.Status(fiber.StatusUnauthorized).JSON(utils.NewAPIError("Invalid role", fiber.StatusUnauthorized))
 		}
 
