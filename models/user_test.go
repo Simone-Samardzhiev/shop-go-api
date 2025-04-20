@@ -2,19 +2,18 @@ package models
 
 import "testing"
 
+// TestRegisterClientPayloadValidate tests validation if different payloads.
 func TestRegisterClientPayloadValidate(t *testing.T) {
-	type TestCase struct {
+	testCases := []struct {
 		Id       int
 		Name     string
 		Payload  RegisterClientPayload
 		Expected bool
-	}
-
-	testCases := []TestCase{
+	}{
 		{
 			Id:       1,
 			Name:     "Valid RegisterClientPayload",
-			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "validUsername", "validPassword"),
+			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "validUsername", "ValidPassword_123"),
 			Expected: true,
 		}, {
 			Id:       2,
