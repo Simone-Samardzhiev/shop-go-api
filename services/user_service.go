@@ -120,7 +120,7 @@ func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUse
 }
 
 // NewDefaultUserService return new instance of UserService.
-func NewDefaultUserService(userRepository repositories.UserRepository, tokenRepository repositories.TokenRepository, authenticator *auth.JWTAuthenticator) UserService {
+func NewDefaultUserService(userRepository repositories.UserRepository, tokenRepository repositories.TokenRepository, authenticator *auth.JWTAuthenticator) *DefaultUserService {
 	return &DefaultUserService{
 		userRepository:  userRepository,
 		tokenRepository: tokenRepository,
