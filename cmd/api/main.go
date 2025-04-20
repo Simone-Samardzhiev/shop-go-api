@@ -37,7 +37,12 @@ func (a *API) start() error {
 		Claims: &auth.Claims{},
 		SigningKey: jwtware.SigningKey{
 			JWTAlg: jwt.SigningMethodHS256.Alg(),
-			Key:    []byte(a.Conf.AuthConfig.JWTSecret),
+			Key:    []byte("secret"),
+		},
+		SuccessHandler: func(c *fiber.Ctx) error {
+			claims := c.Locals("user").(*jwt.Token).Claims.(*auth.Claims)
+			c.Locals("user", claims)
+			return c.Next()
 		},
 	})
 
@@ -45,7 +50,6 @@ func (a *API) start() error {
 	userGroup := api.Group("/users")
 	userGroup.Post("/register/client", a.Handlers.UserHandler.RegisterClient())
 	userGroup.Post("/register/admin", middleware, a.Handlers.UserHandler.RegisterUser())
-
 	userGroup.Post("/login", a.Handlers.UserHandler.Login())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
