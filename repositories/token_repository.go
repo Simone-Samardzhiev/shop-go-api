@@ -4,6 +4,7 @@ import (
 	"api/models"
 	"context"
 	"database/sql"
+	"github.com/google/uuid"
 )
 
 // TokenRepository defines method for managing token data.
@@ -12,6 +13,14 @@ type TokenRepository interface {
 	//
 	// Error is returned if the token fails to be added(e.g, database error)
 	AddToken(ctx context.Context, token *models.Token) error
+
+	// DeleteToken deletes a token with specific id.
+	//
+	// If the token was deleted, the result is true, otherwise if token with this id doesn't,
+	// the result is false
+	//
+	// Error is returned if the token failed to delete due to an error(e. g database error)
+	DeleteToken(ctx context.Context, id uuid.UUID) (bool, error)
 }
 
 // MemoryTokenRepository implements TokenRepository with slice of tokens
@@ -24,6 +33,25 @@ type MemoryTokenRepository struct {
 func (r *MemoryTokenRepository) AddToken(_ context.Context, token *models.Token) error {
 	r.tokens = append(r.tokens, *token)
 	return nil
+}
+
+func (r *MemoryTokenRepository) DeleteToken(ctx context.Context, id uuid.UUID) (bool, error) {
+	i := -1
+
+	for index, token := range r.tokens {
+		if token.Id == id {
+			i = index
+			break
+		}
+	}
+
+	if i == -1 {
+		return false, nil
+	}
+
+	r.tokens[i] = r.tokens[len(r.tokens)-1]
+	r.tokens = r.tokens[:len(r.tokens)-1]
+	return true, nil
 }
 
 // NewMemoryTokenRepository return a new instance of MemoryTokenRepository.
@@ -49,6 +77,23 @@ func (r *PostgresTokenRepository) AddToken(ctx context.Context, token *models.To
 	)
 
 	return err
+}
+
+func (r *PostgresTokenRepository) DeleteToken(ctx context.Context, id uuid.UUID) (bool, error) {
+	result, err := r.db.ExecContext(
+		ctx,
+		`DELETE FROM
+        tokens WHERE id = $1`,
+		id,
+	)
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
 }
 
 // NewPostgresTokenRepository returns new instance of PostgresTokenRepository
