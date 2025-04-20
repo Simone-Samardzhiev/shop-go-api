@@ -7,6 +7,7 @@ import (
 	"testing"
 )
 
+// TestMemoryUserRepositoryAddUser test if adding a user is successful.
 func TestMemoryUserRepositoryAddUser(t *testing.T) {
 	repo := NewMemoryUserRepository()
 	user := models.NewUser(uuid.New(), "email", "username", "password", models.Client)
@@ -32,6 +33,8 @@ func TestMemoryUserRepositoryIdenticalUser(t *testing.T) {
 	}
 }
 
+// TestMemoryUserRepositoryCheckEmailAndUsername test if the method for checking if the email or the username exist
+// works expectedly.
 func TestMemoryUserRepositoryCheckEmailAndUsername(t *testing.T) {
 	repo := NewMemoryUserRepository()
 	user := models.NewUser(uuid.New(), "email", "username", "password", models.Client)
@@ -57,6 +60,7 @@ func TestMemoryUserRepositoryCheckEmailAndUsername(t *testing.T) {
 	}
 }
 
+// TestMemoryUserRepositoryGetUserByUsername tests if fetching a user by email work expectedly.
 func TestMemoryUserRepositoryGetUserByUsername(t *testing.T) {
 	repo := NewMemoryUserRepository()
 	user := models.NewUser(uuid.New(), "email", "username", "password", models.Client)
