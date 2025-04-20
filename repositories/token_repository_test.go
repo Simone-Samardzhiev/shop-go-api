@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// TestMemoryTokenRepositoryAddToken checks if adding a new token works expectedly.
 func TestMemoryTokenRepositoryAddToken(t *testing.T) {
 	repo := NewMemoryTokenRepository()
 	err := repo.AddToken(context.Background(), models.NewToken(uuid.New(), uuid.New(), time.Now().Add(time.Minute)))
