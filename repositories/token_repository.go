@@ -69,7 +69,7 @@ type PostgresTokenRepository struct {
 func (r *PostgresTokenRepository) AddToken(ctx context.Context, token *models.Token) error {
 	_, err := r.db.ExecContext(
 		ctx,
-		`INSERT INTO tokens
+		`INSERT INTO tokens(id, user_id, exp)
 		VALUES ($1, $2, $3)`,
 		token.Id,
 		token.UserId,

@@ -98,11 +98,11 @@ func (s *DefaultUserService) createTokenGroup(ctx context.Context, sub uuid.UUID
 
 	accessToken, err := s.authenticator.CreateToken(sub, uuid.New(), role, auth.AccessToken, time.Now().Add(time.Minute*20))
 	if err != nil {
-		return nil, utils.NewAPIError(err.Error(), fiber.StatusInternalServerError)
+		return nil, utils.InternalServerAPIError()
 	}
 	refreshToken, err := s.authenticator.CreateToken(sub, token.Id, role, auth.RefreshToken, time.Now().Add(time.Hour*24*20))
 	if err != nil {
-		return nil, utils.NewAPIError(err.Error(), fiber.StatusInternalServerError)
+		return nil, utils.InternalServerAPIError()
 	}
 
 	return models.NewTokenGroup(refreshToken, accessToken), nil
@@ -137,7 +137,11 @@ func (s *DefaultUserService) RefreshSession(ctx context.Context, claims *auth.Cl
 		return nil, utils.NewAPIError("Invalid token", fiber.StatusUnauthorized)
 	}
 
-	return s.createTokenGroup(ctx, id, claims.Role)
+	sub, err := uuid.Parse(claims.Subject)
+	if err != nil {
+		return nil, utils.NewAPIError("Invalid token subject", fiber.StatusUnauthorized)
+	}
+	return s.createTokenGroup(ctx, sub, claims.Role)
 }
 
 // NewDefaultUserService return new instance of UserService.
