@@ -3,6 +3,7 @@ package repositories
 import (
 	"api/models"
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"testing"
 )
@@ -75,5 +76,122 @@ func TestMemoryUserRepositoryGetUserByUsername(t *testing.T) {
 	}
 	if *result != *user {
 		t.Errorf("Error getting user by username: %v, expected %v", user, result)
+	}
+}
+
+// SliceOfUsers returns slice of random users used to testing.
+func SliceOfUsers() []*models.User {
+	return []*models.User{
+		models.NewUser(uuid.New(), "email1", "username1", "password1", models.Client),
+		models.NewUser(uuid.New(), "email2", "username2", "password2", models.Workshop),
+		models.NewUser(uuid.New(), "email3", "username3", "password3", models.Delivery),
+		models.NewUser(uuid.New(), "email4", "username4", "password4", models.Admin),
+		models.NewUser(uuid.New(), "email5", "username5", "password5", models.Client),
+		models.NewUser(uuid.New(), "email6", "username6", "password6", models.Client),
+		models.NewUser(uuid.New(), "email7", "username7", "password7", models.Client),
+		models.NewUser(uuid.New(), "email8", "username8", "password8", models.Workshop),
+		models.NewUser(uuid.New(), "email9", "username9", "password9", models.Delivery),
+		models.NewUser(uuid.New(), "email10", "username10", "password10", models.Client),
+	}
+}
+
+// TestMemoryUserRepositoryGetUsers verifies that getting users by specie page and
+func TestMemoryUserRepositoryGetUsers(t *testing.T) {
+	repo := NewMemoryUserRepository()
+	repo.users = SliceOfUsers()
+
+	cases := []struct {
+		limit         int
+		page          int
+		expectedSize  int
+		expectedEmail []string
+	}{
+		{
+			limit:         4,
+			page:          1,
+			expectedSize:  4,
+			expectedEmail: []string{"email1", "email2", "email3", "email4"},
+		},
+		{
+			limit:         4,
+			page:          2,
+			expectedSize:  4,
+			expectedEmail: []string{"email5", "email6", "email7", "email8"},
+		},
+		{
+			limit:         4,
+			page:          3,
+			expectedSize:  2,
+			expectedEmail: []string{"email9", "email10"},
+		},
+		{
+			limit:         4,
+			page:          4,
+			expectedSize:  0,
+			expectedEmail: nil,
+		},
+	}
+
+	for caseNum, c := range cases {
+		t.Run(fmt.Sprintf("case-%d", caseNum), func(t *testing.T) {
+			result, err := repo.GetUsers(context.Background(), c.limit, c.page)
+			if err != nil {
+				t.Fatalf("Error getting users: %v", err)
+			}
+			if len(result) != c.expectedSize {
+				t.Fatalf("Error getting users: %v, expected %v", len(result), c.expectedSize)
+			}
+
+			for i := 0; i < c.expectedSize; i++ {
+				if result[i].Email != c.expectedEmail[i] {
+					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmail[i])
+				}
+			}
+		})
+	}
+}
+
+func TestMemoryUserRepositoryGetUsersByRole(t *testing.T) {
+	repo := NewMemoryUserRepository()
+	repo.users = SliceOfUsers()
+	cases := []struct {
+		limit         int
+		page          int
+		role          models.UserRole
+		expectedSize  int
+		expectedEmail []string
+	}{
+		{
+			limit:         4,
+			page:          1,
+			role:          models.Client,
+			expectedSize:  4,
+			expectedEmail: []string{"email1", "email5", "email6", "email7"},
+		},
+		{
+			limit:         4,
+			page:          2,
+			role:          models.Client,
+			expectedSize:  1,
+			expectedEmail: []string{"email10"},
+		},
+	}
+
+	for caseNum, c := range cases {
+		t.Run(fmt.Sprintf("case-%d", caseNum), func(t *testing.T) {
+			result, err := repo.GetUsersByRole(context.Background(), c.limit, c.page, c.role)
+			if err != nil {
+				t.Fatalf("Error getting users: %v", err)
+			}
+			if len(result) != c.expectedSize {
+				t.Fatalf("Error getting users: %v, expected %v", len(result), c.expectedSize)
+			}
+
+			for i := 0; i < c.expectedSize; i++ {
+				if result[i].Email != c.expectedEmail[i] {
+					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmail[i])
+				}
+			}
+		})
 	}
 }
