@@ -20,16 +20,21 @@ type UserService interface {
 	// Return utils.APIError if error appears otherwise nil
 	AddClient(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError
 
-	// AddUser used to save the user.
-	//
-	// Return utils.APIError if error appears otherwise nil
-	AddUser(ctx context.Context, payload *models.RegisterUserPayload) *utils.APIError
-
 	// Login used to check login user by returning refresh and access token.
 	//
 	// The credentials are checked, and if the tokens are successfully created, they are returned.
 	// Otherwise, a utils.APIError is returned.
 	Login(ctx context.Context, payload *models.LoginUserPayload) (*models.TokenGroup, *utils.APIError)
+
+	// AddUser used to save the user.
+	//
+	// Return utils.APIError if error appears otherwise nil
+	AddUser(ctx context.Context, payload *models.RegisterUserPayload) *utils.APIError
+
+	// RefreshSession used to refresh user token by refresh token.
+	// If the refresh token is valid, the result is models.TokenGroup, otherwise
+	// a utils.APIError is returned.
+	RefreshSession(ctx context.Context, claims *auth.Claims) (*models.TokenGroup, *utils.APIError)
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -91,7 +96,7 @@ func (s *DefaultUserService) createTokenGroup(ctx context.Context, sub uuid.UUID
 		return nil, utils.InternalServerAPIError()
 	}
 
-	accessToken, err := s.authenticator.CreateToken(sub, token.Id, role, auth.AccessToken, time.Now().Add(time.Minute*20))
+	accessToken, err := s.authenticator.CreateToken(sub, uuid.New(), role, auth.AccessToken, time.Now().Add(time.Minute*20))
 	if err != nil {
 		return nil, utils.NewAPIError(err.Error(), fiber.StatusInternalServerError)
 	}
@@ -117,6 +122,22 @@ func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUse
 	}
 
 	return s.createTokenGroup(ctx, fetchedUser.Id, fetchedUser.UserType)
+}
+
+func (s *DefaultUserService) RefreshSession(ctx context.Context, claims *auth.Claims) (*models.TokenGroup, *utils.APIError) {
+	id, err := uuid.Parse(claims.ID)
+	if err != nil {
+		return nil, utils.NewAPIError("Invalid token id", fiber.StatusUnauthorized)
+	}
+	result, err := s.tokenRepository.DeleteToken(ctx, id)
+	if err != nil {
+		return nil, utils.InternalServerAPIError()
+	}
+	if !result {
+		return nil, utils.NewAPIError("Invalid token", fiber.StatusUnauthorized)
+	}
+
+	return s.createTokenGroup(ctx, id, claims.Role)
 }
 
 // NewDefaultUserService return new instance of UserService.
