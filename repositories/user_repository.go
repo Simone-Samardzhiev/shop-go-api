@@ -74,7 +74,7 @@ type PostgresUserRepository struct {
 func (r *PostgresUserRepository) AddUser(ctx context.Context, user *models.User) error {
 	_, err := r.db.ExecContext(
 		ctx,
-		` INSERT INTO users (id, email, username, password, user_type) 
+		` INSERT INTO users (id, email, username, password, user_role) 
  		VALUES ($1, $2, $3, $4, $5)`,
 		user.Id,
 		user.Email,
@@ -101,7 +101,7 @@ func (r *PostgresUserRepository) CheckEmailAndUsername(ctx context.Context, emai
 func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
 	row := r.db.QueryRowContext(
 		ctx,
-		`SELECT id, email, username, password, user_type
+		`SELECT id, email, username, password, user_role
 		FROM users
 		WHERE username = $1`,
 		username,
