@@ -99,25 +99,29 @@ func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*
 	return result, nil
 }
 
-func (r *MemoryUserRepository) GetUsersByRole(ctx context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error) {
-	result := make([]*models.UserInfo, 0, limit)
-	offset := (page - 1) * limit
-	end := offset + limit
-	if end > len(r.users) {
-		end = len(r.users)
-	}
-
-	for i := offset; i < end; i++ {
-		if r.users[i].UserRole == role {
-			result = append(result, models.NewUserInfo(
-				r.users[i].Id,
-				r.users[i].Email,
-				r.users[i].Username,
-				r.users[i].UserRole,
-			))
+func (r *MemoryUserRepository) GetUsersByRole(_ctx context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error) {
+	filtered := make([]*models.UserInfo, 0)
+	for _, u := range r.users {
+		if u.UserRole == role {
+			filtered = append(
+				filtered,
+				models.NewUserInfo(
+					u.Id,
+					u.Email,
+					u.Username,
+					u.UserRole,
+				),
+			)
 		}
 	}
-	return result, nil
+
+	offset := (page - 1) * limit
+	end := offset + limit
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+
+	return filtered[offset:end], nil
 }
 
 // PostgresUserRepository implements UserRepository using postgres.
