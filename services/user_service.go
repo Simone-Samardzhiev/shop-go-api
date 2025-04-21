@@ -121,7 +121,7 @@ func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUse
 		return nil, utils.NewAPIError("Wrong credentials", fiber.StatusUnauthorized)
 	}
 
-	return s.createTokenGroup(ctx, fetchedUser.Id, fetchedUser.UserType)
+	return s.createTokenGroup(ctx, fetchedUser.Id, fetchedUser.UserRole)
 }
 
 func (s *DefaultUserService) RefreshSession(ctx context.Context, claims *auth.Claims) (*models.TokenGroup, *utils.APIError) {

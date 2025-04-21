@@ -80,7 +80,7 @@ func (r *PostgresUserRepository) AddUser(ctx context.Context, user *models.User)
 		user.Email,
 		user.Username,
 		user.Password,
-		user.UserType,
+		user.UserRole,
 	)
 
 	return err
@@ -108,7 +108,7 @@ func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username
 	)
 
 	var user models.User
-	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.UserType)
+	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.UserRole)
 	return &user, err
 }
 

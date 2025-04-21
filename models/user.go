@@ -162,7 +162,7 @@ type User struct {
 	Email    string
 	Username string
 	Password string
-	UserType UserRole
+	UserRole UserRole
 }
 
 // NewUser create new instance of User
@@ -172,6 +172,6 @@ func NewUser(id uuid.UUID, email string, username string, password string, userT
 		Email:    email,
 		Username: username,
 		Password: password,
-		UserType: userType,
+		UserRole: userType,
 	}
 }
