@@ -177,7 +177,7 @@ func NewUser(id uuid.UUID, email string, username string, password string, userT
 }
 
 // UserInfo holds used data without the password,
-// used by admins to check users data.
+// used by admins to check users' data.
 type UserInfo struct {
 	Id       uuid.UUID `json:"id"`
 	Email    string    `json:"email"`

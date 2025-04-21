@@ -18,7 +18,7 @@ func TestMemoryTokenRepositoryAddToken(t *testing.T) {
 }
 
 // TestMemoryTokenRepositoryDeleteToken verifies that deleting an existing token result in true
-// and non existing in false.
+// and non-existing in false.
 func TestMemoryTokenRepositoryDeleteToken(t *testing.T) {
 	repo := NewMemoryTokenRepository()
 	tokenId := uuid.New()
