@@ -175,3 +175,22 @@ func NewUser(id uuid.UUID, email string, username string, password string, userT
 		UserRole: userType,
 	}
 }
+
+// UserInfo holds used data without the password,
+// used by admins to check users data.
+type UserInfo struct {
+	Id       uuid.UUID `json:"id"`
+	Email    string    `json:"email"`
+	Username string    `json:"username"`
+	UserRole UserRole  `json:"user_role"`
+}
+
+// NewUserInfo returns new instance of UserInfo
+func NewUserInfo(id uuid.UUID, email, username string, userRole UserRole) *UserInfo {
+	return &UserInfo{
+		Id:       id,
+		Email:    email,
+		Username: username,
+		UserRole: userRole,
+	}
+}
