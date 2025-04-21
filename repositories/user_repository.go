@@ -23,6 +23,12 @@ type UserRepository interface {
 	//
 	// Returns an error if a user with the specified username doesn't exist or there was a database error.
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
+
+	// GetUsers gets UserInfo from users.
+	//
+	// The limit specifies how many users are returned.
+	// The page is used to specify which page to return.
+	GetUsers(ctx context.Context, limit, page int) ([]*models.UserInfo, error)
 }
 
 // MemoryUserRepository implements UserRepository with slice of users.
@@ -64,6 +70,26 @@ func (r *MemoryUserRepository) GetUserByUsername(_ context.Context, username str
 		}
 	}
 	return nil, sql.ErrNoRows
+}
+
+func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*models.UserInfo, error) {
+	result := make([]*models.UserInfo, 0, limit)
+	offset := (page - 1) * limit
+	end := offset + limit
+	if end > len(r.users) {
+		end = len(r.users)
+	}
+
+	for i := offset; i < end; i++ {
+		result = append(result, models.NewUserInfo(
+			r.users[i].Id,
+			r.users[i].Email,
+			r.users[i].Username,
+			r.users[i].UserRole,
+		))
+	}
+
+	return result, nil
 }
 
 // PostgresUserRepository implements UserRepository using postgres.
@@ -110,6 +136,44 @@ func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username
 	var user models.User
 	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.UserRole)
 	return &user, err
+}
+
+func (r *PostgresUserRepository) GetUsers(ctx context.Context, limit, page int) ([]*models.UserInfo, error) {
+	result := make([]*models.UserInfo, 0, limit)
+	offset := (page - 1) * limit
+
+	rows, err := r.db.QueryContext(
+		ctx,
+		` SELECT id, email, username, password, user_role
+ 		FROM users
+ 		OFFSET $1
+ 		LIMIT $2
+ 		`,
+		offset,
+		limit,
+	)
+
+	defer func() {
+		closeErr := rows.Close()
+		if closeErr != nil {
+			err = closeErr
+		}
+	}()
+
+	if err != nil {
+		return result, err
+	}
+
+	for rows.Next() {
+		var info models.UserInfo
+		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.UserRole)
+		if err != nil {
+			return result, err
+		}
+		result = append(result, &info)
+	}
+
+	return result, nil
 }
 
 // NewPostgresUserRepository creates a new instance of PostgresUserRepository
