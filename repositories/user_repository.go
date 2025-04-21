@@ -29,6 +29,13 @@ type UserRepository interface {
 	// The limit specifies how many users are returned.
 	// The page is used to specify which page to return.
 	GetUsers(ctx context.Context, limit, page int) ([]*models.UserInfo, error)
+
+	// GetUsersByRole gets UserInfo from users.
+	//
+	// The limit specifies how many users are returned.
+	// The page is used to specify which page to return.
+	// The role is used to filter users by specific role.
+	GetUsersByRole(ctx context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error)
 }
 
 // MemoryUserRepository implements UserRepository with slice of users.
@@ -89,6 +96,27 @@ func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*
 		))
 	}
 
+	return result, nil
+}
+
+func (r *MemoryUserRepository) GetUsersByRole(ctx context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error) {
+	result := make([]*models.UserInfo, 0, limit)
+	offset := (page - 1) * limit
+	end := offset + limit
+	if end > len(r.users) {
+		end = len(r.users)
+	}
+
+	for i := offset; i < end; i++ {
+		if r.users[i].UserRole == role {
+			result = append(result, models.NewUserInfo(
+				r.users[i].Id,
+				r.users[i].Email,
+				r.users[i].Username,
+				r.users[i].UserRole,
+			))
+		}
+	}
 	return result, nil
 }
 
@@ -163,6 +191,44 @@ func (r *PostgresUserRepository) GetUsers(ctx context.Context, limit, page int) 
 	if err != nil {
 		return result, err
 	}
+
+	for rows.Next() {
+		var info models.UserInfo
+		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.UserRole)
+		if err != nil {
+			return result, err
+		}
+		result = append(result, &info)
+	}
+
+	return result, nil
+}
+
+func (r *PostgresUserRepository) GetUsersByRole(ctx context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error) {
+	result := make([]*models.UserInfo, 0, limit)
+	offset := (page - 1) * limit
+
+	rows, err := r.db.QueryContext(
+		ctx,
+		`SELECT id, email, username, password, user_role
+		FROM users 
+		WHERE user_role = $1 
+		OFFSET $2 
+		LIMIT $3`,
+		role,
+		offset,
+		limit,
+	)
+	if err != nil {
+		return result, err
+	}
+
+	defer func() {
+		closeErr := rows.Close()
+		if closeErr != nil {
+			err = closeErr
+		}
+	}()
 
 	for rows.Next() {
 		var info models.UserInfo
