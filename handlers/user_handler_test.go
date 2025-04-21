@@ -340,3 +340,68 @@ func TestDefaultUserHandlerRegisterUserNotAdmin(t *testing.T) {
 		t.Fatalf("Invalid response code: %v expected 401", resp.StatusCode)
 	}
 }
+
+// TestDefaultUserHandlerRefreshSession verifies that a user can send a refresh token
+// to renew his session. If the token is already used, or it's not refresh type, the request should fail.
+func TestDefaultUserHandlerRefreshSession(t *testing.T) {
+	setup := SetUpWithAdmin()
+	app := fiber.New()
+	app.Post("/login", setup.Login())
+	app.Get("/refresh", Middleware(), setup.RefreshSession())
+
+	// Attempt to log in that should succeed.
+	req := httptest.NewRequest(http.MethodPost, "/login", ValidUserLoginPayload())
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Invalid response code: %v expected 200", resp.StatusCode)
+	}
+
+	var tokens models.TokenGroup
+	err = json.NewDecoder(resp.Body).Decode(&tokens)
+	if err != nil {
+		t.Errorf("Failed to unmarshal tokens: %v", err)
+	}
+
+	// Attempt to refresh the session that should succeed.
+	req = httptest.NewRequest(http.MethodGet, "/refresh", nil)
+	req.Header.Set("Authorization", "Bearer "+tokens.RefreshToken)
+	resp, err = app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Invalid response code: %v expected 200", resp.StatusCode)
+	}
+
+	var newTokens models.TokenGroup
+	err = json.NewDecoder(resp.Body).Decode(&newTokens)
+	if err != nil {
+		t.Errorf("Failed to unmarshal tokens: %v", err)
+	}
+
+	// Attempt to refresh with the same token should fail.
+	req = httptest.NewRequest(http.MethodGet, "/refresh", nil)
+	req.Header.Set("Authorization", "Bearer "+tokens.RefreshToken)
+	resp, err = app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("Invalid response code: %v expected 401", resp.StatusCode)
+	}
+
+	// Attempt to refresh with access token should also fail.
+	req = httptest.NewRequest(http.MethodGet, "/refresh", nil)
+	req.Header.Set("Authorization", "Bearer "+tokens.AccessToken)
+	resp, err = app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("Invalid response code: %v expected 401", resp.StatusCode)
+	}
+}

@@ -16,6 +16,9 @@ type UserHandler interface {
 	RegisterUser() fiber.Handler
 	// Login returns handler used by all users to log in.
 	Login() fiber.Handler
+	// RefreshSession returns handler used by all users
+	// to refresh their session using refresh token.
+	RefreshSession() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -77,6 +80,24 @@ func (h *DefaultUserHandler) Login() fiber.Handler {
 		}
 
 		tokens, apiError := h.service.Login(c.Context(), payload)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+		return c.Status(fiber.StatusOK).JSON(tokens)
+	}
+}
+
+func (h *DefaultUserHandler) RefreshSession() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.TokenType != auth.RefreshToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.NewAPIError("Invalid token", fiber.StatusUnauthorized))
+		}
+
+		tokens, apiError := h.service.RefreshSession(c.Context(), claims)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}

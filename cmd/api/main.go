@@ -51,6 +51,7 @@ func (a *API) start() error {
 	userGroup.Post("/register/client", a.Handlers.UserHandler.RegisterClient())
 	userGroup.Post("/register/admin", middleware, a.Handlers.UserHandler.RegisterUser())
 	userGroup.Post("/login", a.Handlers.UserHandler.Login())
+	userGroup.Get("/refresh", middleware, a.Handlers.UserHandler.RefreshSession())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }

@@ -114,7 +114,7 @@ func TestDefaultUserServiceRefreshSession(t *testing.T) {
 	}
 
 	// Call RefreshSession with parsed claims
-	newTokenGroup, apiErr := service.RefreshSession(context.Background(), *claims)
+	newTokenGroup, apiErr := service.RefreshSession(context.Background(), claims)
 	if apiErr != nil {
 		t.Fatalf("RefreshSession failed: %v", apiErr)
 	}
