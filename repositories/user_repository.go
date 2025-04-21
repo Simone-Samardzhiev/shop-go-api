@@ -42,12 +42,12 @@ type UserRepository interface {
 //
 // Mostly used to mock UserRepository.
 type MemoryUserRepository struct {
-	users []models.User
+	users []*models.User
 }
 
 // NewMemoryUserRepository creates a new instance of MemoryUserRepository
 func NewMemoryUserRepository() *MemoryUserRepository {
-	return &MemoryUserRepository{users: make([]models.User, 0)}
+	return &MemoryUserRepository{users: make([]*models.User, 0)}
 }
 
 func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) error {
@@ -57,7 +57,7 @@ func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) err
 		}
 	}
 
-	r.users = append(r.users, *user)
+	r.users = append(r.users, user)
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (r *MemoryUserRepository) CheckEmailAndUsername(_ context.Context, email st
 func (r *MemoryUserRepository) GetUserByUsername(_ context.Context, username string) (*models.User, error) {
 	for _, u := range r.users {
 		if u.Username == username {
-			return &u, nil
+			return u, nil
 		}
 	}
 	return nil, sql.ErrNoRows
