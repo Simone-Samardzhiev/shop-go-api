@@ -35,6 +35,11 @@ type UserService interface {
 	// If the refresh token is valid, the result is models.TokenGroup, otherwise
 	// a utils.APIError is returned.
 	RefreshSession(ctx context.Context, claims *auth.Claims) (*models.TokenGroup, *utils.APIError)
+
+	// GetUsers used to get user information by admins.
+	//
+	// Support pagination with limit and page plus filtering by role that is optional.
+	GetUsers(ctx context.Context, limit, page int, role *string) ([]*models.UserInfo, *utils.APIError)
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -142,6 +147,21 @@ func (s *DefaultUserService) RefreshSession(ctx context.Context, claims *auth.Cl
 		return nil, utils.NewAPIError("Invalid token subject", fiber.StatusUnauthorized)
 	}
 	return s.createTokenGroup(ctx, sub, claims.Role)
+}
+
+func (s *DefaultUserService) GetUsers(ctx context.Context, limit, page int, role *string) ([]*models.UserInfo, *utils.APIError) {
+	var results []*models.UserInfo
+	var err error
+	if role != nil {
+		results, err = s.userRepository.GetUsersByRole(ctx, limit, page, *role)
+	} else {
+		results, err = s.userRepository.GetUsers(ctx, limit, page)
+	}
+
+	if err != nil {
+		return nil, utils.InternalServerAPIError()
+	}
+	return results, nil
 }
 
 // NewDefaultUserService return new instance of UserService.
