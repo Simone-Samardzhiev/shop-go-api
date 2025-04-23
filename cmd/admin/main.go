@@ -73,7 +73,7 @@ func main() {
 	}
 
 	_, err = db.Exec(`
-		INSERT INTO users(id, email, username, password, user_type)
+		INSERT INTO users(id, email, username, password, user_role)
 		VALUES($1, $2, $3, $4, $5)`,
 		uuid.New().String(),
 		email,
