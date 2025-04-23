@@ -79,26 +79,9 @@ func TestMemoryUserRepositoryGetUserByUsername(t *testing.T) {
 	}
 }
 
-// SliceOfUsers returns slice of random users used to testing.
-func SliceOfUsers() []*models.User {
-	return []*models.User{
-		models.NewUser(uuid.New(), "email1", "username1", "password1", models.Client),
-		models.NewUser(uuid.New(), "email2", "username2", "password2", models.Workshop),
-		models.NewUser(uuid.New(), "email3", "username3", "password3", models.Delivery),
-		models.NewUser(uuid.New(), "email4", "username4", "password4", models.Admin),
-		models.NewUser(uuid.New(), "email5", "username5", "password5", models.Client),
-		models.NewUser(uuid.New(), "email6", "username6", "password6", models.Client),
-		models.NewUser(uuid.New(), "email7", "username7", "password7", models.Client),
-		models.NewUser(uuid.New(), "email8", "username8", "password8", models.Workshop),
-		models.NewUser(uuid.New(), "email9", "username9", "password9", models.Delivery),
-		models.NewUser(uuid.New(), "email10", "username10", "password10", models.Client),
-	}
-}
-
 // TestMemoryUserRepositoryGetUsers verifies that getting users by specie page and
 func TestMemoryUserRepositoryGetUsers(t *testing.T) {
-	repo := NewMemoryUserRepository()
-	repo.users = SliceOfUsers()
+	repo := NewMemoryUserRepositoryWithUsers()
 
 	cases := []struct {
 		limit         int
@@ -152,8 +135,8 @@ func TestMemoryUserRepositoryGetUsers(t *testing.T) {
 }
 
 func TestMemoryUserRepositoryGetUsersByRole(t *testing.T) {
-	repo := NewMemoryUserRepository()
-	repo.users = SliceOfUsers()
+	repo := NewMemoryUserRepositoryWithUsers()
+
 	cases := []struct {
 		limit         int
 		page          int

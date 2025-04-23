@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/google/uuid"
 )
 
 // UserRepository defines methods used to modify user data.
@@ -48,6 +49,22 @@ type MemoryUserRepository struct {
 // NewMemoryUserRepository creates a new instance of MemoryUserRepository
 func NewMemoryUserRepository() *MemoryUserRepository {
 	return &MemoryUserRepository{users: make([]*models.User, 0)}
+}
+
+// NewMemoryUserRepositoryWithUsers creates a new instance of MemoryUserRepository
+func NewMemoryUserRepositoryWithUsers() *MemoryUserRepository {
+	return &MemoryUserRepository{users: []*models.User{
+		models.NewUser(uuid.New(), "email1", "username1", "password1", models.Client),
+		models.NewUser(uuid.New(), "email2", "username2", "password2", models.Workshop),
+		models.NewUser(uuid.New(), "email3", "username3", "password3", models.Delivery),
+		models.NewUser(uuid.New(), "email4", "username4", "password4", models.Admin),
+		models.NewUser(uuid.New(), "email5", "username5", "password5", models.Client),
+		models.NewUser(uuid.New(), "email6", "username6", "password6", models.Client),
+		models.NewUser(uuid.New(), "email7", "username7", "password7", models.Client),
+		models.NewUser(uuid.New(), "email8", "username8", "password8", models.Workshop),
+		models.NewUser(uuid.New(), "email9", "username9", "password9", models.Delivery),
+		models.NewUser(uuid.New(), "email10", "username10", "password10", models.Client),
+	}}
 }
 
 func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) error {
