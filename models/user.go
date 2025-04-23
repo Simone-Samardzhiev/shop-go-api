@@ -116,7 +116,7 @@ func (payload *RegisterUserPayload) Validate() bool {
 		return false
 	}
 
-	if payload.UserRole != Admin && payload.UserRole != Client && payload.UserRole != Delivery && payload.UserRole != Workshop {
+	if !RolesMap[payload.UserRole] {
 		return false
 	}
 
@@ -155,6 +155,14 @@ const (
 	Delivery UserRole = "delivery"
 	Workshop UserRole = "workshop"
 )
+
+// RolesMap used to check users tole
+var RolesMap = map[UserRole]bool{
+	Admin:    true,
+	Client:   true,
+	Delivery: true,
+	Workshop: true,
+}
 
 // User holds registered used data.
 type User struct {
