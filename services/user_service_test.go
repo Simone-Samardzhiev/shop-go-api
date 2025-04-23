@@ -6,6 +6,7 @@ import (
 	"api/models"
 	"api/repositories"
 	"context"
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"testing"
 )
@@ -122,4 +123,84 @@ func TestDefaultUserServiceRefreshSession(t *testing.T) {
 	if newTokenGroup.AccessToken == "" || newTokenGroup.RefreshToken == "" {
 		t.Errorf("Expected non-empty tokens")
 	}
+}
+
+func TestDefaultUserServiceGetUsers(t *testing.T) {
+	userRepository := repositories.NewMemoryUserRepositoryWithUsers()
+	tokenRepository := repositories.NewMemoryTokenRepository()
+	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
+		JWTSecret: "secret",
+		Issuer:    "issuer",
+	})
+
+	role := models.Client
+	service := NewDefaultUserService(userRepository, tokenRepository, authenticator)
+	cases := []struct {
+		limit          int
+		page           int
+		expectedSize   int
+		role           *models.UserRole
+		expectedEmails []string
+	}{
+		{
+			limit:          4,
+			page:           1,
+			expectedSize:   4,
+			role:           nil,
+			expectedEmails: []string{"email1", "email2", "email3", "email4"},
+		}, {
+			limit:          4,
+			page:           2,
+			expectedSize:   4,
+			role:           nil,
+			expectedEmails: []string{"email5", "email6", "email7", "email8"},
+		},
+		{
+			limit:          4,
+			page:           3,
+			expectedSize:   2,
+			role:           nil,
+			expectedEmails: []string{"email9", "email10"},
+		},
+		{
+			limit:          4,
+			page:           4,
+			expectedSize:   0,
+			role:           nil,
+			expectedEmails: nil,
+		},
+		{
+			limit:          4,
+			page:           1,
+			role:           &role,
+			expectedSize:   4,
+			expectedEmails: []string{"email1", "email5", "email6", "email7"},
+		},
+		{
+			limit:          4,
+			page:           2,
+			role:           &role,
+			expectedSize:   1,
+			expectedEmails: []string{"email10"},
+		},
+	}
+
+	for caseNum, c := range cases {
+		t.Run(fmt.Sprintf("case-%d", caseNum), func(t *testing.T) {
+			result, err := service.GetUsers(context.Background(), c.limit, c.page, c.role)
+			if err != nil {
+				t.Fatalf("Error getting users: %v", err)
+			}
+			if len(result) != c.expectedSize {
+				t.Fatalf("Error getting users: %v, expected %v", len(result), c.expectedSize)
+			}
+
+			for i := 0; i < c.expectedSize; i++ {
+				if result[i].Email != c.expectedEmails[i] {
+					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmails[i])
+				}
+			}
+		})
+	}
+
 }
