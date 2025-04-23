@@ -6,19 +6,26 @@ import (
 	"api/services"
 	"api/utils"
 	"github.com/gofiber/fiber/v2"
+	"strconv"
 )
 
 // UserHandler defines methods that return handler related ot users.
 type UserHandler interface {
 	// RegisterClient returns handler used by clients to register
 	RegisterClient() fiber.Handler
+
 	// RegisterUser handler used by admins to add a new user.
 	RegisterUser() fiber.Handler
+
 	// Login returns handler used by all users to log in.
 	Login() fiber.Handler
+
 	// RefreshSession returns handler used by all users
 	// to refresh their session using refresh token.
 	RefreshSession() fiber.Handler
+
+	// GetUsers returns handler used by admins to see users' information.
+	GetUsers() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -102,6 +109,52 @@ func (h *DefaultUserHandler) RefreshSession() fiber.Handler {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
 		return c.Status(fiber.StatusOK).JSON(tokens)
+	}
+}
+
+func (h *DefaultUserHandler) GetUsers() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.NewAPIError("Invalid token", fiber.StatusUnauthorized))
+		}
+
+		limit := c.Query("limit")
+		parsedLimit, err := strconv.Atoi(limit)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid limit", fiber.StatusBadGateway))
+		}
+
+		if parsedLimit > 100 {
+			parsedLimit = 100
+		}
+
+		page := c.Query("page")
+		parsedPage, err := strconv.Atoi(page)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid page", fiber.StatusBadGateway))
+		}
+		if parsedPage < 1 {
+			parsedPage = 1
+		}
+
+		role := c.Query("role")
+		var parsedRole *models.UserRole
+		if role == "" {
+			parsedRole = nil
+		} else if !models.RolesMap[role] {
+			return c.Status(fiber.StatusBadGateway).JSON(utils.NewAPIError("Invalid role", fiber.StatusBadGateway))
+		}
+
+		result, errResponse := h.service.GetUsers(c.Context(), parsedLimit, parsedPage, parsedRole)
+		if errResponse != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+
+		return c.Status(fiber.StatusOK).JSON(result)
 	}
 }
 
