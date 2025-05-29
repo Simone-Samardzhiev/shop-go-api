@@ -37,7 +37,7 @@ func (a *API) start() error {
 		Claims: &auth.Claims{},
 		SigningKey: jwtware.SigningKey{
 			JWTAlg: jwt.SigningMethodHS256.Alg(),
-			Key:    []byte("secret"),
+			Key:    []byte(a.Conf.AuthConfig.JWTSecret),
 		},
 		SuccessHandler: func(c *fiber.Ctx) error {
 			claims := c.Locals("user").(*jwt.Token).Claims.(*auth.Claims)
