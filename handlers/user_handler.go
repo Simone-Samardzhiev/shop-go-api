@@ -17,14 +17,14 @@ type UserHandler interface {
 	// RegisterUser handler used by admins to add a new user.
 	RegisterUser() fiber.Handler
 
-	// Login returns handler used by all users to log in.
+	// Login returns a handler used by all users to log in.
 	Login() fiber.Handler
 
-	// RefreshSession returns handler used by all users
-	// to refresh their session using refresh token.
+	// RefreshSession returns the handler used by all users
+	// to refresh their session using the refresh token.
 	RefreshSession() fiber.Handler
 
-	// GetUsers returns handler used by admins to see users' information.
+	// GetUsers returns handler used by admins to see user's information.
 	GetUsers() fiber.Handler
 }
 

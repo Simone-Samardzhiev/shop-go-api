@@ -6,23 +6,22 @@ import (
 	"api/models"
 	"api/repositories"
 	"api/services"
+	"api/utils"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-// Setup returns DefaultUserHandler
+// Setup returns DefaultUserHandler.
 //
-// The handler is mounted with repositories.MemoryUserRepository,
+// The handlers are mounted with repositories.MemoryUserRepository,
 // repositories.MemoryTokenRepository, auth.JWTAuthenticator.
 func Setup() *DefaultUserHandler {
 	userRepository := repositories.NewMemoryUserRepository()
@@ -35,25 +34,15 @@ func Setup() *DefaultUserHandler {
 	return NewDefaultUserHandler(service)
 }
 
-// SetUpWithAdmin returns DefaultUserHandler
+// SetUpWithAdmin returns DefaultUserHandler.
 //
-// The handler is mounted with repositories.MemoryUserRepository,
+// The handlers are mounted with repositories.MemoryUserRepository,
 // repositories.MemoryTokenRepository, auth.JWTAuthenticator.
-// The admin account has been added to the repository, with the same credentials as
-// ValidRegisterUserPayload and ValidUserLoginPayload.
 func SetUpWithAdmin() *DefaultUserHandler {
-	userRepository := repositories.NewMemoryUserRepository()
-	hash, err := auth.HashPassword("Password_123")
+	userRepository, err := repositories.NewMemoryUserRepositoryWithUsers()
 	if err != nil {
-		panic(fmt.Sprintf("Error hashing password: %v", err))
+		panic(fmt.Sprintf("Failed to create memory user repository: %v", err))
 	}
-
-	admin := models.NewUser(uuid.New(), "example@gmail.com", "Username", hash, models.Admin)
-	err = userRepository.AddUser(context.Background(), admin)
-	if err != nil {
-		panic(fmt.Sprintf("Error adding user: %v", err))
-	}
-
 	tokenRepository := repositories.NewMemoryTokenRepository()
 	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
 		JWTSecret: "secret",
@@ -65,7 +54,7 @@ func SetUpWithAdmin() *DefaultUserHandler {
 
 // ValidRegisterUserPayload returns io.Reader of valid models.RegisterClientPayload.
 func ValidRegisterUserPayload() io.Reader {
-	user := models.NewRegisterClientPayload("example@gmail.com", "Username", "Password_123")
+	user := utils.ValidRegisterUserPayload()
 	data, err := json.Marshal(user)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to marshal register client payload: %v", err))
@@ -75,7 +64,7 @@ func ValidRegisterUserPayload() io.Reader {
 
 // InvalidRegisterUserPayload returns io.Reader of invalid models.RegisterClientPayload.
 func InvalidRegisterUserPayload() io.Reader {
-	user := models.NewRegisterClientPayload("examplemail.com", "Username", "Password_123")
+	user := utils.InvalidRegisterUserPayload()
 	data, err := json.Marshal(user)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to marshal register client payload: %v", err))
@@ -87,7 +76,7 @@ func InvalidRegisterUserPayload() io.Reader {
 //
 // The credentials are the same as ValidRegisterUserPayload.
 func ValidUserLoginPayload() io.Reader {
-	user := models.NewLoginUserPayload("Username", "Password_123")
+	user := utils.ValidLoginUserPayload()
 	data, err := json.Marshal(user)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to marshal user payload: %v", err))
@@ -111,10 +100,10 @@ func Middleware() fiber.Handler {
 	})
 }
 
-// TestDefaultUserHandlerRegisterClient varifies that handler
-// for registration succeeds with status http.StatusCreated,
-// and attempt by another user to register with the same email
-// or username result in fiber.StatusConflict
+// TestDefaultUserHandlerRegisterClient tests that handler
+// RegisterClient of DefaultUserHandler succeeds with status http.StatusCreated,
+// and an attempt by another user to register with the same email
+// or username results in fiber.StatusConflict.
 func TestDefaultUserHandlerRegisterClient(t *testing.T) {
 	handler := Setup()
 	app := fiber.New()
@@ -143,8 +132,9 @@ func TestDefaultUserHandlerRegisterClient(t *testing.T) {
 	}
 }
 
-// TestDefaultUserHandlerRegisterClientInvalidUser verifies that the handler for
-// registration will return http.StatusBadRequest if the payload of the user is invalid
+// TestDefaultUserHandlerRegisterClientInvalidUser tests that the handler
+// RegisterClient of DefaultUserHandler will return
+// http.StatusBadRequest if the payload of the user is invalid.
 func TestDefaultUserHandlerRegisterClientInvalidUser(t *testing.T) {
 	handler := Setup()
 	app := fiber.New()
@@ -161,9 +151,10 @@ func TestDefaultUserHandlerRegisterClientInvalidUser(t *testing.T) {
 	}
 }
 
-// TestDefaultUserHandlerLogin verifies that the handler for login
+// TestDefaultUserHandlerLogin tests that the handler Login of DefaultUserHandler
 // will correctly return models.TokenGroup and http.StatusOK when a user login with valid.
-// If a user logins with incorrect credentials, the handler should return http.StatusUnauthorized
+//
+// If a user logins with incorrect credentials, the handler should return http.StatusUnauthorized.
 func TestDefaultUserHandlerLogin(t *testing.T) {
 	handler := Setup()
 	app := fiber.New()
@@ -216,9 +207,8 @@ func TestDefaultUserHandlerLogin(t *testing.T) {
 	}
 }
 
-// TestDefaultUserHandlerRegisterUser verifies that admin can successfully register
-// a new user. If the token that is sent is of auth.RefreshToken type,
-// the result should be http.StatusUnauthorized.
+// TestDefaultUserHandlerRegisterUser test that the handler
+// RegisterUser of DefaultUserHandler can be successfully used by an admin.
 func TestDefaultUserHandlerRegisterUser(t *testing.T) {
 	handler := SetUpWithAdmin()
 	app := fiber.New()
@@ -278,8 +268,8 @@ func TestDefaultUserHandlerRegisterUser(t *testing.T) {
 	}
 }
 
-// TestDefaultUserHandlerRegisterUserNotAdmin verifies that attempt to register
-// a new user with a role is not possible without an admin token.
+// TestDefaultUserHandlerRegisterUserNotAdmin tests that the handler RegisterUser
+// of DefaultUserHandler will not proceed with a request with a token type that isn't admin.
 func TestDefaultUserHandlerRegisterUserNotAdmin(t *testing.T) {
 	handler := Setup()
 	app := fiber.New()
@@ -315,8 +305,8 @@ func TestDefaultUserHandlerRegisterUserNotAdmin(t *testing.T) {
 		t.Errorf("Failed to unmarshal tokens: %v", err)
 	}
 
-	// Attempt to register a new user as a delivery worker that should not succeed,
-	// because we the access token is for client.
+	// Attempt to register a new user as a delivery worker that should not succeed
+	// because the access token is for a client.
 	newUser := models.RegisterUserPayload{
 		RegisterClientPayload: models.RegisterClientPayload{
 			Email:    "another@gmail.com",
@@ -341,8 +331,9 @@ func TestDefaultUserHandlerRegisterUserNotAdmin(t *testing.T) {
 	}
 }
 
-// TestDefaultUserHandlerRefreshSession verifies that a user can send a refresh token
-// to renew his session. If the token is already used, or it's not refresh type, the request should fail.
+// TestDefaultUserHandlerRefreshSession tests that handler RefreshSession of DefaultUserHandler
+// will successfully refresh the session, and if the received token is expired or it's not refresh type,
+// the handler will return an error.
 func TestDefaultUserHandlerRefreshSession(t *testing.T) {
 	setup := SetUpWithAdmin()
 	app := fiber.New()

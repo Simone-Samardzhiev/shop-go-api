@@ -13,22 +13,22 @@ import (
 	"time"
 )
 
-// UserService defines method used to manage user business logic
+// UserService defines methods used to manage user business logic
 type UserService interface {
 	// AddClient used to save the user.
 	//
-	// Return utils.APIError if error appears otherwise nil
+	// Return utils.APIError if an error occurs otherwise nil.
 	AddClient(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError
 
 	// Login used to check login user by returning refresh and access token.
 	//
 	// The credentials are checked, and if the tokens are successfully created, they are returned.
-	// Otherwise, a utils.APIError is returned.
+	// Otherwise, utils.APIError is returned.
 	Login(ctx context.Context, payload *models.LoginUserPayload) (*models.TokenGroup, *utils.APIError)
 
 	// AddUser used to save the user.
 	//
-	// Return utils.APIError if error appears otherwise nil
+	// Return utils.APIError if an error occurs otherwise nil.
 	AddUser(ctx context.Context, payload *models.RegisterUserPayload) *utils.APIError
 
 	// RefreshSession used to refresh user token by refresh token.

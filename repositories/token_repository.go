@@ -14,9 +14,9 @@ type TokenRepository interface {
 	// Error is returned if the token fails to be added(e.g, database error)
 	AddToken(ctx context.Context, token *models.Token) error
 
-	// DeleteToken deletes a token with specific id.
+	// DeleteToken deletes a token with a specific id.
 	//
-	// If the token was deleted, the result is true, otherwise if token with this id doesn't,
+	// If the token was deleted, the result is true, otherwise if the token with this id doesn't,
 	// the result is false
 	//
 	// Error is returned if the token failed to delete due to an error(e. g database error)
@@ -35,7 +35,7 @@ func (r *MemoryTokenRepository) AddToken(_ context.Context, token *models.Token)
 	return nil
 }
 
-func (r *MemoryTokenRepository) DeleteToken(ctx context.Context, id uuid.UUID) (bool, error) {
+func (r *MemoryTokenRepository) DeleteToken(_ context.Context, id uuid.UUID) (bool, error) {
 	i := -1
 
 	for index, token := range r.tokens {
@@ -96,7 +96,7 @@ func (r *PostgresTokenRepository) DeleteToken(ctx context.Context, id uuid.UUID)
 	return rows > 0, nil
 }
 
-// NewPostgresTokenRepository returns new instance of PostgresTokenRepository
+// NewPostgresTokenRepository returns a new instance of PostgresTokenRepository
 func NewPostgresTokenRepository(db *sql.DB) *PostgresTokenRepository {
 	return &PostgresTokenRepository{
 		db: db,

@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-// TestMemoryTokenRepositoryAddToken checks if adding a new token works expectedly.
+// TestMemoryTokenRepositoryAddToken tests if adding a new token
+// with the method AddToken of MemoryTokenRepository.
 func TestMemoryTokenRepositoryAddToken(t *testing.T) {
 	repo := NewMemoryTokenRepository()
 	err := repo.AddToken(context.Background(), models.NewToken(uuid.New(), uuid.New(), time.Now().Add(time.Minute)))
@@ -17,8 +18,9 @@ func TestMemoryTokenRepositoryAddToken(t *testing.T) {
 	}
 }
 
-// TestMemoryTokenRepositoryDeleteToken verifies that deleting an existing token result in true
-// and non-existing in false.
+// TestMemoryTokenRepositoryDeleteToken tests if deleting an existing token
+// returns true and for no-existing false with the method DeleteToken
+// of MemoryTokenRepository.
 func TestMemoryTokenRepositoryDeleteToken(t *testing.T) {
 	repo := NewMemoryTokenRepository()
 	tokenId := uuid.New()

@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"api/auth"
 	"api/models"
 	"context"
 	"database/sql"
@@ -39,32 +40,47 @@ type UserRepository interface {
 	GetUsersByRole(ctx context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error)
 }
 
-// MemoryUserRepository implements UserRepository with slice of users.
+// MemoryUserRepository implements UserRepository with a slice of users.
 //
 // Mostly used to mock UserRepository.
 type MemoryUserRepository struct {
 	users []*models.User
 }
 
-// NewMemoryUserRepository creates a new instance of MemoryUserRepository
+// NewMemoryUserRepository creates a new instance of MemoryUserRepository.
 func NewMemoryUserRepository() *MemoryUserRepository {
 	return &MemoryUserRepository{users: make([]*models.User, 0)}
 }
 
-// NewMemoryUserRepositoryWithUsers creates a new instance of MemoryUserRepository
-func NewMemoryUserRepositoryWithUsers() *MemoryUserRepository {
-	return &MemoryUserRepository{users: []*models.User{
-		models.NewUser(uuid.New(), "email1", "username1", "password1", models.Client),
-		models.NewUser(uuid.New(), "email2", "username2", "password2", models.Workshop),
-		models.NewUser(uuid.New(), "email3", "username3", "password3", models.Delivery),
-		models.NewUser(uuid.New(), "email4", "username4", "password4", models.Admin),
-		models.NewUser(uuid.New(), "email5", "username5", "password5", models.Client),
-		models.NewUser(uuid.New(), "email6", "username6", "password6", models.Client),
-		models.NewUser(uuid.New(), "email7", "username7", "password7", models.Client),
-		models.NewUser(uuid.New(), "email8", "username8", "password8", models.Workshop),
-		models.NewUser(uuid.New(), "email9", "username9", "password9", models.Delivery),
-		models.NewUser(uuid.New(), "email10", "username10", "password10", models.Client),
-	}}
+// NewMemoryUserRepositoryWithUsers creates a new instance of MemoryUserRepository.
+//
+// Admin credentials:
+//  1. Email: admin@example.com
+//  2. Username: AdminUsername
+//  3. Password: Password_123
+func NewMemoryUserRepositoryWithUsers() (*MemoryUserRepository, error) {
+	users := []*models.User{
+		models.NewUser(uuid.New(), "admin@example.com", "AdminUsername", "Password_123", models.Admin),
+		models.NewUser(uuid.New(), "email1@example.com", "Username1", "Password_123", models.Workshop),
+		models.NewUser(uuid.New(), "email2@example.com", "Username2", "Password_123", models.Delivery),
+		models.NewUser(uuid.New(), "email3@example.com", "Username3", "Password_123", models.Admin),
+		models.NewUser(uuid.New(), "email4@example.com", "Username4", "Password_123", models.Client),
+		models.NewUser(uuid.New(), "email5@example.com", "Username5", "Password_123", models.Client),
+		models.NewUser(uuid.New(), "email6@example.com", "Username6", "Password_123", models.Client),
+		models.NewUser(uuid.New(), "email7@example.com", "Username7", "Password_123", models.Workshop),
+		models.NewUser(uuid.New(), "email8@example.com", "Username8", "Password_123", models.Delivery),
+		models.NewUser(uuid.New(), "email9@example.com", "Username9", "Password_123", models.Client),
+	}
+
+	for _, user := range users {
+		hash, err := auth.HashPassword(user.Password)
+		if err != nil {
+			return nil, err
+		}
+		user.Password = hash
+	}
+
+	return &MemoryUserRepository{users: users}, nil
 }
 
 func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) error {
@@ -116,7 +132,7 @@ func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*
 	return result, nil
 }
 
-func (r *MemoryUserRepository) GetUsersByRole(_ctx context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error) {
+func (r *MemoryUserRepository) GetUsersByRole(_ context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error) {
 	filtered := make([]*models.UserInfo, 0)
 	for _, u := range r.users {
 		if u.UserRole == role {

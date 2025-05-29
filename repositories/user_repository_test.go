@@ -8,7 +8,8 @@ import (
 	"testing"
 )
 
-// TestMemoryUserRepositoryAddUser test if adding a user is successful.
+// TestMemoryUserRepositoryAddUser tests if adding a user with the method AddUser of
+// MemoryUserRepository works expectedly.
 func TestMemoryUserRepositoryAddUser(t *testing.T) {
 	repo := NewMemoryUserRepository()
 	user := models.NewUser(uuid.New(), "email", "username", "password", models.Client)
@@ -18,8 +19,8 @@ func TestMemoryUserRepositoryAddUser(t *testing.T) {
 	}
 }
 
-// TestMemoryUserRepositoryIdenticalUser used to test if adding user with same email
-// or username gives an error.
+// TestMemoryUserRepositoryIdenticalUser tests if adding a user with the method AddUser of
+// MemoryUserRepository returns an error.
 func TestMemoryUserRepositoryIdenticalUser(t *testing.T) {
 	repo := NewMemoryUserRepository()
 	user := models.NewUser(uuid.New(), "email", "username", "password", models.Client)
@@ -34,8 +35,8 @@ func TestMemoryUserRepositoryIdenticalUser(t *testing.T) {
 	}
 }
 
-// TestMemoryUserRepositoryCheckEmailAndUsername test if the method for checking if the email or the username exist
-// works expectedly.
+// TestMemoryUserRepositoryCheckEmailAndUsername tests if checking user email and username with
+// the method CheckEmailAndUsername of MemoryUserRepository work expectedly.
 func TestMemoryUserRepositoryCheckEmailAndUsername(t *testing.T) {
 	repo := NewMemoryUserRepository()
 	user := models.NewUser(uuid.New(), "email", "username", "password", models.Client)
@@ -61,7 +62,8 @@ func TestMemoryUserRepositoryCheckEmailAndUsername(t *testing.T) {
 	}
 }
 
-// TestMemoryUserRepositoryGetUserByUsername tests if fetching a user by email work expectedly.
+// TestMemoryUserRepositoryGetUserByUsername tests if fetching a user by username with
+// the method GetUserByUsername of MemoryUserRepository works expectedly.
 func TestMemoryUserRepositoryGetUserByUsername(t *testing.T) {
 	repo := NewMemoryUserRepository()
 	user := models.NewUser(uuid.New(), "email", "username", "password", models.Client)
@@ -79,39 +81,43 @@ func TestMemoryUserRepositoryGetUserByUsername(t *testing.T) {
 	}
 }
 
-// TestMemoryUserRepositoryGetUsers verifies that getting users by specie page and
+// TestMemoryUserRepositoryGetUsers tests if fetching users works expectedly with the method
+// GetUsers of MemoryUserRepository.
 func TestMemoryUserRepositoryGetUsers(t *testing.T) {
-	repo := NewMemoryUserRepositoryWithUsers()
+	repo, err := NewMemoryUserRepositoryWithUsers()
+	if err != nil {
+		t.Fatalf("Error creating memory user repository: %v", err)
+	}
 
 	cases := []struct {
-		limit         int
-		page          int
-		expectedSize  int
-		expectedEmail []string
+		limit          int
+		page           int
+		expectedSize   int
+		expectedEmails []string
 	}{
 		{
-			limit:         4,
-			page:          1,
-			expectedSize:  4,
-			expectedEmail: []string{"email1", "email2", "email3", "email4"},
+			limit:          4,
+			page:           1,
+			expectedSize:   4,
+			expectedEmails: []string{"admin@example.com", "email1@example.com", "email2@example.com", "email3@example.com"},
 		},
 		{
-			limit:         4,
-			page:          2,
-			expectedSize:  4,
-			expectedEmail: []string{"email5", "email6", "email7", "email8"},
+			limit:          4,
+			page:           2,
+			expectedSize:   4,
+			expectedEmails: []string{"email4@example.com", "email5@example.com", "email6@example.com", "email7@example.com"},
 		},
 		{
-			limit:         4,
-			page:          3,
-			expectedSize:  2,
-			expectedEmail: []string{"email9", "email10"},
+			limit:          4,
+			page:           3,
+			expectedSize:   2,
+			expectedEmails: []string{"email8@example.com", "email9@example.com"},
 		},
 		{
-			limit:         4,
-			page:          4,
-			expectedSize:  0,
-			expectedEmail: nil,
+			limit:          4,
+			page:           4,
+			expectedSize:   0,
+			expectedEmails: nil,
 		},
 	}
 
@@ -126,37 +132,48 @@ func TestMemoryUserRepositoryGetUsers(t *testing.T) {
 			}
 
 			for i := 0; i < c.expectedSize; i++ {
-				if result[i].Email != c.expectedEmail[i] {
-					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmail[i])
+				if result[i].Email != c.expectedEmails[i] {
+					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmails[i])
 				}
 			}
 		})
 	}
 }
 
+// TestMemoryUserRepositoryGetUsersByRole tests if fetching users by role works expectedly with
+// the method GetUsersByRole of MemoryUserRepository.
 func TestMemoryUserRepositoryGetUsersByRole(t *testing.T) {
-	repo := NewMemoryUserRepositoryWithUsers()
+	repo, err := NewMemoryUserRepositoryWithUsers()
+
+	if err != nil {
+		t.Fatalf("Error creating memory user repository: %v", err)
+	}
 
 	cases := []struct {
-		limit         int
-		page          int
-		role          models.UserRole
-		expectedSize  int
-		expectedEmail []string
+		limit          int
+		page           int
+		role           models.UserRole
+		expectedSize   int
+		expectedEmails []string
 	}{
 		{
-			limit:         4,
-			page:          1,
-			role:          models.Client,
-			expectedSize:  4,
-			expectedEmail: []string{"email1", "email5", "email6", "email7"},
-		},
-		{
-			limit:         4,
-			page:          2,
-			role:          models.Client,
-			expectedSize:  1,
-			expectedEmail: []string{"email10"},
+			limit:          4,
+			page:           1,
+			role:           models.Client,
+			expectedSize:   4,
+			expectedEmails: []string{"email4@example.com", "email5@example.com", "email6@example.com", "email9@example.com"},
+		}, {
+			limit:          1,
+			page:           1,
+			role:           models.Workshop,
+			expectedSize:   1,
+			expectedEmails: []string{"email1@example.com"},
+		}, {
+			limit:          1,
+			page:           2,
+			role:           models.Workshop,
+			expectedSize:   1,
+			expectedEmails: []string{"email7@example.com"},
 		},
 	}
 
@@ -171,8 +188,8 @@ func TestMemoryUserRepositoryGetUsersByRole(t *testing.T) {
 			}
 
 			for i := 0; i < c.expectedSize; i++ {
-				if result[i].Email != c.expectedEmail[i] {
-					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmail[i])
+				if result[i].Email != c.expectedEmails[i] {
+					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmails[i])
 				}
 			}
 		})
