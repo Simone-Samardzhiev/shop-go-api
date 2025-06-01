@@ -63,7 +63,7 @@ func Password(password string) bool {
 //  2. At most 16 chars
 //  3. No spaces
 func Username(username string) bool {
-	if (len(username) < 8) || (len(username) > 16) {
+	if (len(username) < 8) || (len(username) > 40) {
 		return false
 	}
 
