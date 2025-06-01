@@ -58,6 +58,10 @@ func NewMemoryUserRepository() *MemoryUserRepository {
 //  1. Email: admin@example.com
 //  2. Username: AdminUsername
 //  3. Password: Password_123
+//
+// User emails and usernames go from 1 to 9(email1@example.com - email9@example.com and Username1 - Username9).
+//
+// The password is the same for all (Password_123)
 func NewMemoryUserRepositoryWithUsers() (*MemoryUserRepository, error) {
 	users := []*models.User{
 		models.NewUser(uuid.New(), "admin@example.com", "AdminUsername", "Password_123", models.Admin),
