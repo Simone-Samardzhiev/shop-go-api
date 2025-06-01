@@ -57,7 +57,7 @@ func TestDefaultUserHandlerRegisterClient(t *testing.T) {
 	app := fiber.New()
 	err := utils.SendRegisterRequest(app, handler.RegisterClient())
 	if err != nil {
-		t.Fatalf("SendRegisterRequest returned error: %v", err)
+		t.Fatalf("request failed with error: %v", err)
 	}
 }
 
@@ -79,7 +79,7 @@ func BenchmarkDefaultUserHandlerRegisterClient(b *testing.B) {
 
 		data, err := json.Marshal(payload)
 		if err != nil {
-			b.Fatalf("json.Marshal returned error: %v", err)
+			b.Fatalf("marshaling data returned error: %v", err)
 		}
 		buffer := bytes.NewBuffer(data)
 		req := httptest.NewRequest(http.MethodPost, "/register", buffer)
@@ -95,5 +95,30 @@ func BenchmarkDefaultUserHandlerRegisterClient(b *testing.B) {
 		if response.StatusCode != http.StatusCreated {
 			b.Fatalf("invalid response code: %v expected 201", response.StatusCode)
 		}
+	}
+}
+
+func TestDefaultUserHandlerRegisterClientWithInvalidPayload(t *testing.T) {
+	handler := Setup()
+	app := fiber.New()
+	app.Post("/register", handler.RegisterClient())
+
+	payload := utils.InvalidRegisterClientPayload()
+	data, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshaling data returned error: %v", err)
+	}
+	buffer := bytes.NewBuffer(data)
+
+	req := httptest.NewRequest(http.MethodPost, "/register", buffer)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed with error: %v", err)
+	}
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("invalid response code: %v expected 400", res.StatusCode)
 	}
 }

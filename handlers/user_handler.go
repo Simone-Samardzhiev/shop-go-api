@@ -35,13 +35,13 @@ type DefaultUserHandler struct {
 
 func (h *DefaultUserHandler) RegisterClient() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var payload *models.RegisterClientPayload
-		err := c.BodyParser(payload)
+		var payload models.RegisterClientPayload
+		err := c.BodyParser(&payload)
 		if err != nil {
 			return err
 		}
 
-		apiError := h.service.AddClient(c.Context(), payload)
+		apiError := h.service.AddClient(c.Context(), &payload)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
@@ -62,13 +62,13 @@ func (h *DefaultUserHandler) RegisterUser() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(utils.NewAPIError("Invalid role", fiber.StatusUnauthorized))
 		}
 
-		var payload *models.RegisterUserPayload
+		var payload models.RegisterUserPayload
 		err := c.BodyParser(&payload)
 		if err != nil {
 			return err
 		}
 
-		apiError := h.service.AddUser(c.Context(), payload)
+		apiError := h.service.AddUser(c.Context(), &payload)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
@@ -80,13 +80,13 @@ func (h *DefaultUserHandler) RegisterUser() fiber.Handler {
 
 func (h *DefaultUserHandler) Login() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var payload *models.LoginUserPayload
-		err := c.BodyParser(payload)
+		var payload models.LoginUserPayload
+		err := c.BodyParser(&payload)
 		if err != nil {
 			return err
 		}
 
-		tokens, apiError := h.service.Login(c.Context(), payload)
+		tokens, apiError := h.service.Login(c.Context(), &payload)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
