@@ -1,10 +1,9 @@
 package models
 
 import (
+	"api/validate"
+	"errors"
 	"github.com/google/uuid"
-	"net/mail"
-	"strings"
-	"unicode"
 )
 
 // RegisterClientPayload used by clients on registration.
@@ -15,84 +14,20 @@ type RegisterClientPayload struct {
 }
 
 // Validate will check if the payload of the client is valid.
-func (payload *RegisterClientPayload) Validate() bool {
-	if !payload.validateEmail() {
-		return false
+func (payload *RegisterClientPayload) Validate() error {
+	if ok := validate.Email(payload.Email); !ok {
+		return errors.New("invalid email")
 	}
 
-	if len(payload.Username) < 8 {
-		return false
+	if ok := validate.Password(payload.Password); !ok {
+		return errors.New("invalid password")
 	}
 
-	if !payload.validatePassword() {
-		return false
+	if ok := validate.Username(payload.Username); !ok {
+		return errors.New("invalid username")
 	}
 
-	return true
-}
-
-func (payload *RegisterClientPayload) validateEmail() bool {
-	addr, err := mail.ParseAddress(payload.Email)
-	if err != nil {
-		return false
-	}
-
-	parts := strings.Split(addr.Address, "@")
-	if len(parts) != 2 {
-		return false
-	}
-
-	local, domain := parts[0], parts[1]
-
-	if local == "" || domain == "" {
-		return false
-	}
-
-	if !strings.Contains(domain, ".") {
-		return false
-	}
-
-	tldParts := strings.Split(domain, ".")
-	tld := tldParts[len(tldParts)-1]
-	if len(tld) < 2 {
-		return false
-	}
-
-	return true
-}
-
-func (payload *RegisterClientPayload) validatePassword() bool {
-	var (
-		// Size is more than 8
-		minSize = false
-		// Contains upper char
-		upper = false
-		// Contains lower char
-		lower = false
-		// Contain number
-		number = false
-		// Contains special char
-		special = false
-	)
-
-	if len(payload.Password) > 8 {
-		minSize = true
-	}
-
-	for _, c := range payload.Password {
-		switch {
-		case unicode.IsUpper(c):
-			upper = true
-		case unicode.IsLower(c):
-			lower = true
-		case unicode.IsNumber(c):
-			number = true
-		case unicode.IsPunct(c) || unicode.IsSymbol(c):
-			special = true
-		}
-	}
-
-	return minSize && upper && lower && number && special
+	return nil
 }
 
 // RegisterUserPayload extends RegisterClientPayload by providing UserRole.
@@ -103,24 +38,16 @@ type RegisterUserPayload struct {
 	UserRole UserRole `json:"user_role"`
 }
 
-func (payload *RegisterUserPayload) Validate() bool {
-	if !payload.validateEmail() {
-		return false
-	}
-
-	if len(payload.UserRole) < 8 {
-		return false
-	}
-
-	if !payload.validatePassword() {
-		return false
+func (payload *RegisterUserPayload) Validate() error {
+	if err := payload.RegisterClientPayload.Validate(); err != nil {
+		return err
 	}
 
 	if !RolesMap[payload.UserRole] {
-		return false
+		return errors.New("invalid user role")
 	}
 
-	return true
+	return nil
 }
 
 // NewRegisterClientPayload creates a new instance of RegisterClientPayload
@@ -146,7 +73,7 @@ func NewLoginUserPayload(username string, password string) *LoginUserPayload {
 	}
 }
 
-// UserRole used to set the type of users
+// UserRole used to set the type of users.
 type UserRole = string
 
 const (
@@ -156,7 +83,7 @@ const (
 	Workshop UserRole = "workshop"
 )
 
-// RolesMap used to check users tole
+// RolesMap used to check users role.
 var RolesMap = map[UserRole]bool{
 	Admin:    true,
 	Client:   true,
@@ -173,7 +100,7 @@ type User struct {
 	UserRole UserRole
 }
 
-// NewUser create new instance of User
+// NewUser create new instance of User.
 func NewUser(id uuid.UUID, email string, username string, password string, userType UserRole) *User {
 	return &User{
 		Id:       id,
@@ -185,7 +112,7 @@ func NewUser(id uuid.UUID, email string, username string, password string, userT
 }
 
 // UserInfo holds used data without the password,
-// used by admins to check users' data.
+// used by admins to check user's data.
 type UserInfo struct {
 	Id       uuid.UUID `json:"id"`
 	Email    string    `json:"email"`
@@ -193,7 +120,7 @@ type UserInfo struct {
 	UserRole UserRole  `json:"user_role"`
 }
 
-// NewUserInfo returns new instance of UserInfo
+// NewUserInfo returns a new instance of UserInfo.
 func NewUserInfo(id uuid.UUID, email, username string, userRole UserRole) *UserInfo {
 	return &UserInfo{
 		Id:       id,

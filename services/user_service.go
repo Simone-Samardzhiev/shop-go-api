@@ -50,8 +50,8 @@ type DefaultUserService struct {
 }
 
 func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.RegisterClientPayload) *utils.APIError {
-	if !payload.Validate() {
-		return utils.NewAPIError("Invalid User Payload", fiber.StatusBadRequest)
+	if err := payload.Validate(); err != nil {
+		return utils.NewAPIErrorFromError(err, fiber.StatusBadRequest)
 	}
 
 	result, err := s.userRepository.CheckEmailAndUsername(ctx, payload.Email, payload.Username)
@@ -73,13 +73,13 @@ func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.Regi
 }
 
 func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.RegisterUserPayload) *utils.APIError {
-	if !payload.Validate() {
-		return utils.NewAPIError("Invalid User Payload", fiber.StatusBadRequest)
+	if err := payload.Validate(); err != nil {
+		return utils.NewAPIErrorFromError(err, fiber.StatusBadRequest)
 	}
 
 	result, err := s.userRepository.CheckEmailAndUsername(ctx, payload.Email, payload.Username)
 	if result {
-		return utils.NewAPIError("User already exists", fiber.StatusConflict)
+		return utils.NewAPIError("User already exists.", fiber.StatusConflict)
 	}
 
 	hash, err := auth.HashPassword(payload.Password)
@@ -117,13 +117,13 @@ func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUse
 	fetchedUser, err := s.userRepository.GetUserByUsername(ctx, payload.Username)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return nil, utils.NewAPIError("Wrong credentials", fiber.StatusUnauthorized)
+		return nil, utils.NewAPIError("Wrong credentials.", fiber.StatusUnauthorized)
 	case err != nil:
 		return nil, utils.InternalServerAPIError()
 	}
 
 	if !auth.VerifyPassword(payload.Password, fetchedUser.Password) {
-		return nil, utils.NewAPIError("Wrong credentials", fiber.StatusUnauthorized)
+		return nil, utils.NewAPIError("Wrong credentials.", fiber.StatusUnauthorized)
 	}
 
 	return s.createTokenGroup(ctx, fetchedUser.Id, fetchedUser.UserRole)
@@ -132,19 +132,19 @@ func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUse
 func (s *DefaultUserService) RefreshSession(ctx context.Context, claims *auth.Claims) (*models.TokenGroup, *utils.APIError) {
 	id, err := uuid.Parse(claims.ID)
 	if err != nil {
-		return nil, utils.NewAPIError("Invalid token id", fiber.StatusUnauthorized)
+		return nil, utils.NewAPIError("Invalid token id.", fiber.StatusUnauthorized)
 	}
 	result, err := s.tokenRepository.DeleteToken(ctx, id)
 	if err != nil {
 		return nil, utils.InternalServerAPIError()
 	}
 	if !result {
-		return nil, utils.NewAPIError("Invalid token", fiber.StatusUnauthorized)
+		return nil, utils.NewAPIError("Invalid token.", fiber.StatusUnauthorized)
 	}
 
 	sub, err := uuid.Parse(claims.Subject)
 	if err != nil {
-		return nil, utils.NewAPIError("Invalid token subject", fiber.StatusUnauthorized)
+		return nil, utils.NewAPIError("Invalid token subject.", fiber.StatusUnauthorized)
 	}
 	return s.createTokenGroup(ctx, sub, claims.Role)
 }
