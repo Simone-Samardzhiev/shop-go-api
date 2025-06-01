@@ -8,8 +8,8 @@ import "api/models"
 //  3. Password: Password_123
 func ValidRegisterClientPayload() *models.RegisterClientPayload {
 	return &models.RegisterClientPayload{
-		Email:    "email@example.com",
-		Username: "Username",
+		Email:    "email1@example.com",
+		Username: "Username1",
 		Password: "Password_123",
 	}
 }
