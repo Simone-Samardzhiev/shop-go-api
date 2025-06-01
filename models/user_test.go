@@ -1,70 +1,158 @@
 package models
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
-// TestRegisterClientPayloadValidate tests validation if different payloads.
+// TestRegisterClientPayloadValidate tests validation of different payloads.
 func TestRegisterClientPayloadValidate(t *testing.T) {
-	testCases := []struct {
-		Id       int
+	tests := []struct {
 		Name     string
 		Payload  RegisterClientPayload
-		Expected bool
+		Expected error
 	}{
 		{
-			Id:       1,
-			Name:     "Valid RegisterClientPayload",
+			Name:     "Valid payload",
 			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "validUsername", "ValidPassword_123"),
-			Expected: true,
+			Expected: nil,
 		}, {
-			Id:       2,
-			Name:     "Invalid RegisterClientPayload(email)",
+			Name:     "Invalid email(invalid domain)",
 			Payload:  *NewRegisterClientPayload("invalid@gmail", "validUsername", "invalidPassword"),
-			Expected: false,
+			Expected: errors.New("invalid email"),
 		}, {
-			Id:       3,
-			Name:     "Invalid RegisterClientPayload(email)",
+			Name:     "Invalid email(invalid domain)",
 			Payload:  *NewRegisterClientPayload("invalid@.com", "validUsername", "invalidPassword"),
-			Expected: false,
+			Expected: errors.New("invalid email"),
 		}, {
-			Id:       4,
-			Name:     "Invalid RegisterClientPayload(email)",
+			Name:     "Invalid email(invalid local part)",
 			Payload:  *NewRegisterClientPayload("@gmail.com", "validUsername", "invalidPassword"),
-			Expected: false,
+			Expected: errors.New("invalid email"),
 		}, {
-			Id:       5,
-			Name:     "Invalid RegisterClientPayload(username)",
-			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "user", "invalidPassword"),
-			Expected: false,
+			Name:     "Invalid username(to short)",
+			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "user", "Password_123"),
+			Expected: errors.New("invalid username"),
 		}, {
-			Id:       6,
-			Name:     "Invalid RegisterClientPayload(password)",
+			Name:     "Invalid password(don't have special chars)",
 			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "validUsername", "IDontHaveSpecialChar1"),
-			Expected: false,
+			Expected: errors.New("invalid password"),
 		}, {
-			Id:       7,
-			Name:     "Invalid RegisterClientPayload(password)",
+			Name:     "Invalid password(don't have number)",
 			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "validUsername", "I_Dont_Have_Number"),
-			Expected: false,
+			Expected: errors.New("invalid password"),
 		}, {
-			Id:       8,
-			Name:     "Invalid RegisterClientPayload(password)",
+			Name:     "Invalid password(don't have upper case)",
 			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "validUsername", "i_dont_have_upper_case"),
-			Expected: false,
+			Expected: errors.New("invalid password"),
 		}, {
-			Id:       9,
-			Name:     "Invalid RegisterClientPayload(password)",
+			Name:     "Invalid password(don't have lower case)",
 			Payload:  *NewRegisterClientPayload("validemail@gmail.com", "validUsername", "I_DONT_HAVE_LOWER_CASE"),
-			Expected: false,
+			Expected: errors.New("invalid password"),
+		}, {
+			Name:     "Invalid password(too short)",
+			Payload:  *NewRegisterClientPayload("validemail@gmai.com", "validUsername", "Pas_1"),
+			Expected: errors.New("invalid password"),
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.Name, func(t *testing.T) {
-			result := testCase.Payload.Validate()
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			err := test.Payload.Validate()
 
-			if result != testCase.Expected {
-				t.Errorf("%d Name: %v \nExpected %t, got %t", testCase.Id, testCase.Name, testCase.Expected, result)
+			if test.Expected == nil && err != nil {
+				t.Errorf("Expected no error, got %v", err)
+			} else if test.Expected != nil && err == nil {
+				t.Errorf("Expected error, got nil")
+			} else if test.Expected != nil && err != nil && err.Error() != test.Expected.Error() {
+				t.Errorf("Expected error %v, got %v", test.Expected, err)
 			}
 		})
+	}
+}
+
+// BenchmarkRegisterClientPayloadValidate benchmarks the validation of a RegisterClientPayload.
+func BenchmarkRegisterClientPayloadValidate(b *testing.B) {
+	payload := NewRegisterClientPayload("validemail@gmail.com", "validUsername", "ValidPassword_123")
+
+	for i := 0; i < b.N; i++ {
+		_ = payload.Validate()
+	}
+}
+
+// TestRegisterUserPayloadValidate tests validation of different payloads.
+func TestRegisterUserPayloadValidate(t *testing.T) {
+	tests := []struct {
+		Name     string
+		Payload  RegisterUserPayload
+		Expected error
+	}{
+		{
+			Name:     "Valid payload",
+			Payload:  *NewRegisterUserPayload("validemail@gmail.com", "validUsername", "ValidPassword_123", Client),
+			Expected: nil,
+		}, {
+			Name:     "Invalid email(invalid domain)",
+			Payload:  *NewRegisterUserPayload("invalid@gmail", "validUsername", "invalidPassword", Workshop),
+			Expected: errors.New("invalid email"),
+		}, {
+			Name:     "Invalid email(invalid domain)",
+			Payload:  *NewRegisterUserPayload("invalid@.com", "validUsername", "invalidPassword", Delivery),
+			Expected: errors.New("invalid email"),
+		}, {
+			Name:     "Invalid email(invalid local part)",
+			Payload:  *NewRegisterUserPayload("@gmail.com", "validUsername", "invalidPassword", Client),
+			Expected: errors.New("invalid email"),
+		}, {
+			Name:     "Invalid username(to short)",
+			Payload:  *NewRegisterUserPayload("validemail@gmail.com", "user", "Password_123", Client),
+			Expected: errors.New("invalid username"),
+		}, {
+			Name:     "Invalid password(don't have special chars)",
+			Payload:  *NewRegisterUserPayload("validemail@gmail.com", "validUsername", "IDontHaveSpecialChar1", Client),
+			Expected: errors.New("invalid password"),
+		}, {
+			Name:     "Invalid password(don't have number)",
+			Payload:  *NewRegisterUserPayload("validemail@gmail.com", "validUsername", "I_Dont_Have_Number", Client),
+			Expected: errors.New("invalid password"),
+		}, {
+			Name:     "Invalid password(don't have upper case)",
+			Payload:  *NewRegisterUserPayload("validemail@gmail.com", "validUsername", "i_dont_have_upper_case", Delivery),
+			Expected: errors.New("invalid password"),
+		}, {
+			Name:     "Invalid password(don't have lower case)",
+			Payload:  *NewRegisterUserPayload("validemail@gmail.com", "validUsername", "I_DONT_HAVE_LOWER_CASE", Delivery),
+			Expected: errors.New("invalid password"),
+		}, {
+			Name:     "Invalid password(too short)",
+			Payload:  *NewRegisterUserPayload("validemail@gmai.com", "validUsername", "Pas_1", Workshop),
+			Expected: errors.New("invalid password"),
+		},
+		{
+			Name:     "Invalid role",
+			Payload:  *NewRegisterUserPayload("validemail@gmai.com", "validUsername", "Password_123", "Invalid role"),
+			Expected: errors.New("invalid user role"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			err := test.Payload.Validate()
+			if test.Expected == nil && err != nil {
+				t.Errorf("Expected no error, got %v", err)
+			} else if test.Expected != nil && err == nil {
+				t.Errorf("Expected error, got nil")
+			} else if test.Expected != nil && err != nil && err.Error() != test.Expected.Error() {
+				t.Errorf("Expected error %v, got %v", test.Expected, err)
+			}
+		})
+	}
+}
+
+// BenchmarkRegisterUserPayloadValidate benchmarks the validation of a RegisterUserPayload.
+func BenchmarkRegisterUserPayloadValidate(b *testing.B) {
+	payload := NewRegisterUserPayload("validemail@gmail.com", "validUsername", "ValidPassword_123", Client)
+
+	for i := 0; i < b.N; i++ {
+		_ = payload.Validate()
 	}
 }

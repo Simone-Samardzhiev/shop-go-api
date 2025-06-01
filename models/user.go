@@ -30,6 +30,15 @@ func (payload *RegisterClientPayload) Validate() error {
 	return nil
 }
 
+// NewRegisterClientPayload creates a new instance of RegisterClientPayload
+func NewRegisterClientPayload(email string, username string, password string) *RegisterClientPayload {
+	return &RegisterClientPayload{
+		Email:    email,
+		Username: username,
+		Password: password,
+	}
+}
+
 // RegisterUserPayload extends RegisterClientPayload by providing UserRole.
 //
 // The payload is used by an admin to register workers or in some cases clients.
@@ -50,12 +59,15 @@ func (payload *RegisterUserPayload) Validate() error {
 	return nil
 }
 
-// NewRegisterClientPayload creates a new instance of RegisterClientPayload
-func NewRegisterClientPayload(email string, username string, password string) *RegisterClientPayload {
-	return &RegisterClientPayload{
-		Email:    email,
-		Username: username,
-		Password: password,
+// NewRegisterUserPayload returns a new instance of RegisterUserPayload.
+func NewRegisterUserPayload(email string, username string, password string, userRole UserRole) *RegisterUserPayload {
+	return &RegisterUserPayload{
+		RegisterClientPayload: RegisterClientPayload{
+			Email:    email,
+			Username: username,
+			Password: password,
+		},
+		UserRole: userRole,
 	}
 }
 
@@ -63,14 +75,6 @@ func NewRegisterClientPayload(email string, username string, password string) *R
 type LoginUserPayload struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-// NewLoginUserPayload returns a new instance of LoginUserPayload.
-func NewLoginUserPayload(username string, password string) *LoginUserPayload {
-	return &LoginUserPayload{
-		Username: username,
-		Password: password,
-	}
 }
 
 // UserRole used to set the type of users.
