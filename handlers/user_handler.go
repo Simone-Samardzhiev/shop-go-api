@@ -36,7 +36,7 @@ type DefaultUserHandler struct {
 func (h *DefaultUserHandler) RegisterClient() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var payload *models.RegisterClientPayload
-		err := c.BodyParser(&payload)
+		err := c.BodyParser(payload)
 		if err != nil {
 			return err
 		}
@@ -81,7 +81,7 @@ func (h *DefaultUserHandler) RegisterUser() fiber.Handler {
 func (h *DefaultUserHandler) Login() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var payload *models.LoginUserPayload
-		err := c.BodyParser(&payload)
+		err := c.BodyParser(payload)
 		if err != nil {
 			return err
 		}
