@@ -32,13 +32,13 @@ func TestDefaultUserServiceAddValidUser(t *testing.T) {
 	service := Setup()
 
 	// The First attempt should succeed.
-	err := service.AddClient(context.Background(), utils.ValidRegisterUserPayload())
+	err := service.AddClient(context.Background(), utils.ValidRegisterClientPayload())
 	if err != nil {
 		t.Errorf("AddClient returned error: %v", err)
 	}
 
 	// The second attempt should fail.
-	err = service.AddClient(context.Background(), utils.ValidRegisterUserPayload())
+	err = service.AddClient(context.Background(), utils.ValidRegisterClientPayload())
 	if err == nil {
 		t.Errorf("AddClient returned no error when adding the same user.")
 	}
@@ -48,7 +48,7 @@ func TestDefaultUserServiceAddValidUser(t *testing.T) {
 // with the method AddClient of DefaultUserService.
 func TestDefaultUserServiceAddInvalidUser(t *testing.T) {
 	service := Setup()
-	user := utils.InvalidRegisterUserPayload()
+	user := utils.InvalidRegisterClientPayload()
 
 	// Adding the invalid user should result in an error.
 	err := service.AddClient(context.Background(), user)
@@ -63,7 +63,7 @@ func TestDefaultUserServiceAddLogin(t *testing.T) {
 	service := Setup()
 
 	// Registering the user.
-	err := service.AddClient(context.Background(), utils.ValidRegisterUserPayload())
+	err := service.AddClient(context.Background(), utils.ValidRegisterClientPayload())
 	if err != nil {
 		t.Errorf("AddClient returned error: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestDefaultUserServiceRefreshSession(t *testing.T) {
 	service := Setup()
 
 	// Register the client
-	apiErr := service.AddClient(context.Background(), utils.ValidRegisterUserPayload())
+	apiErr := service.AddClient(context.Background(), utils.ValidRegisterClientPayload())
 	if apiErr != nil {
 		t.Fatalf("Failed to register client: %v", apiErr)
 	}
@@ -192,5 +192,4 @@ func TestDefaultUserServiceGetUsers(t *testing.T) {
 			}
 		})
 	}
-
 }
