@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"strings"
 )
 
 // APIError is the standard way of returning an error.
@@ -15,7 +16,17 @@ func NewAPIError(msg string, status int) *APIError {
 	return &APIError{msg, status}
 }
 
+// NewAPIErrorFromError return instance of APIError from error.
+//
+// The constructor capitalizes the error message and adds punctuation.
+func NewAPIErrorFromError(err error, status int) *APIError {
+	message := err.Error()
+	message = strings.ToUpper(string(message[0])) + message[1:]
+	message = message + "."
+	return &APIError{message, status}
+}
+
 // InternalServerAPIError is the standard way of return a server error
 func InternalServerAPIError() *APIError {
-	return &APIError{"Internal Server Error", fiber.StatusInternalServerError}
+	return &APIError{"Internal server error.", fiber.StatusInternalServerError}
 }
