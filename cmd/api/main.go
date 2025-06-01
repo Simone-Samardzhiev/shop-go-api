@@ -7,6 +7,7 @@ import (
 	"api/handlers"
 	"api/repositories"
 	"api/services"
+	"api/utils"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -14,6 +15,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"log"
+	"net/http"
 )
 
 // API struct contains the application.
@@ -43,6 +45,9 @@ func (a *API) start() error {
 			claims := c.Locals("user").(*jwt.Token).Claims.(*auth.Claims)
 			c.Locals("user", claims)
 			return c.Next()
+		},
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return c.Status(http.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
 		},
 	})
 

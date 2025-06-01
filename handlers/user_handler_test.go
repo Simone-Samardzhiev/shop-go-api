@@ -52,6 +52,25 @@ func SetupWithUsers() *DefaultUserHandler {
 	return NewDefaultUserHandler(userService)
 }
 
+// Middleware returns middleware for JWT authentication.
+func Middleware() fiber.Handler {
+	return jwtware.New(jwtware.Config{
+		Claims: &auth.Claims{},
+		SigningKey: jwtware.SigningKey{
+			JWTAlg: jwt.SigningMethodHS256.Alg(),
+			Key:    []byte("secret"),
+		},
+		SuccessHandler: func(c *fiber.Ctx) error {
+			claims := c.Locals("user").(*jwt.Token).Claims.(*auth.Claims)
+			c.Locals("user", claims)
+			return c.Next()
+		},
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			return c.Status(http.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		},
+	})
+}
+
 // TestDefaultUserHandlerRegisterClient tests that adding valid clients works.
 func TestDefaultUserHandlerRegisterClient(t *testing.T) {
 	handler := Setup()

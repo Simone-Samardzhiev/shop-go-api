@@ -101,7 +101,7 @@ func (h *DefaultUserHandler) RefreshSession() fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
 		}
 		if claims.TokenType != auth.RefreshToken {
-			return c.Status(fiber.StatusUnauthorized).JSON(utils.NewAPIError("Invalid token", fiber.StatusUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
 		}
 
 		tokens, apiError := h.service.RefreshSession(c.Context(), claims)
@@ -119,7 +119,7 @@ func (h *DefaultUserHandler) GetUsers() fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
 		}
 		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
-			return c.Status(fiber.StatusUnauthorized).JSON(utils.NewAPIError("Invalid token", fiber.StatusUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
 		}
 
 		limit := c.Query("limit")
