@@ -8,9 +8,12 @@ import (
 	"api/services"
 	"api/utils"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"net/http"
 	"net/http/httptest"
@@ -262,4 +265,146 @@ func FuzzDefaultUserHandlerLogin(f *testing.F) {
 			t.Fatalf("invalid response code: %v expected 200 or 401", res.StatusCode)
 		}
 	})
+}
+
+// TestDefaultUserHandlerRefreshSession tests that refreshing the session works.
+func TestDefaultUserHandlerRefreshSession(t *testing.T) {
+	handler := SetupWithUsers()
+	app := fiber.New()
+	app.Post("/refresh-session", Middleware(), handler.RefreshSession())
+	tokens, err := utils.SendLoginRequest(app, handler.Login())
+	if err != nil {
+		t.Fatalf("request failed with error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/refresh-session", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokens.RefreshToken))
+	res, err := app.Test(req, -1)
+
+	if err != nil {
+		t.Fatalf("request failed with error: %v", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("invalid response code: %v expected 200", res.StatusCode)
+	}
+
+	var newTokens models.TokenGroup
+	err = json.NewDecoder(res.Body).Decode(&newTokens)
+	if err != nil {
+		t.Fatalf("decoding response failed with error: %v", err)
+	}
+
+	if newTokens.AccessToken == "" || newTokens.RefreshToken == "" {
+		t.Errorf("Expected non-empty tokens")
+	}
+}
+
+// BenchmarkDefaultUserHandlerRefreshSession benchmarks the RefreshSession method.
+func BenchmarkDefaultUserHandlerRefreshSession(b *testing.B) {
+	handler := SetupWithUsers()
+	app := fiber.New()
+	app.Post("/refresh-session", Middleware(), handler.RefreshSession())
+	tokens, err := utils.SendLoginRequest(app, handler.Login())
+	if err != nil {
+		b.Fatalf("request failed with error: %v", err)
+	}
+	refreshToken := tokens.RefreshToken
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		req := httptest.NewRequest(http.MethodPost, "/refresh-session", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", refreshToken))
+
+		b.StartTimer()
+		res, err := app.Test(req, -1)
+		if err != nil {
+			b.Fatalf("request failed with error: %v", err)
+		}
+		b.StopTimer()
+
+		if res.StatusCode != http.StatusOK {
+			b.Fatalf("invalid response code: %v expected 200", res.StatusCode)
+		}
+
+		var newTokens models.TokenGroup
+		err = json.NewDecoder(res.Body).Decode(&newTokens)
+		if err != nil {
+			b.Fatalf("decoding response failed with error: %v", err)
+		}
+
+		if newTokens.AccessToken == "" || newTokens.RefreshToken == "" {
+			b.Errorf("Expected non-empty tokens")
+		}
+		refreshToken = newTokens.RefreshToken
+	}
+}
+
+// FuzzDefaultUserHandlerRefreshSession fuzzes the RefreshSession method.
+func FuzzDefaultUserHandlerRefreshSession(f *testing.F) {
+	handler := SetupWithUsers()
+	app := fiber.New()
+	app.Post("/refresh-session", Middleware(), handler.RefreshSession())
+	tokens, err := utils.SendLoginRequest(app, handler.Login())
+	if err != nil {
+		f.Fatalf("request failed with error: %v", err)
+	}
+
+	f.Add(tokens.RefreshToken)
+	f.Add("")
+	f.Add("refresh-token")
+	f.Add("dasdhjafjgksgakldfgkhashfkgashdfgyujsdygfysadgfasgkyhdfgkhjskghdf")
+
+	f.Fuzz(func(t *testing.T, refreshToken string) {
+		req := httptest.NewRequest(http.MethodPost, "/refresh-session", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", base64.StdEncoding.EncodeToString([]byte(refreshToken))))
+
+		res, err := app.Test(req, -1)
+		if err != nil {
+			t.Fatalf("request failed with error: %v", err)
+		}
+
+		if res.StatusCode == http.StatusOK {
+			var newTokens models.TokenGroup
+			err = json.NewDecoder(res.Body).Decode(&newTokens)
+			if err != nil {
+				t.Errorf("decoding response failed with error: %v", err)
+			}
+			if newTokens.AccessToken == "" || newTokens.RefreshToken == "" {
+				t.Fatalf("Expected non-empty tokens")
+			}
+		} else if res.StatusCode == http.StatusUnauthorized {
+			var errorResponse utils.APIError
+			err = json.NewDecoder(res.Body).Decode(&errorResponse)
+			if err != nil {
+				t.Fatalf("decoding response failed with error: %v", err)
+			}
+		} else {
+			t.Fatalf("invalid response code: %v expected 200 or 401", res.StatusCode)
+		}
+	})
+}
+
+// TestDefaultUserHandlerRefreshSessionWithInvalidToken tests that refreshing the session fails with invalid token.
+func TestDefaultUserHandlerRefreshSessionWithInvalidToken(t *testing.T) {
+	handler := Setup()
+	app := fiber.New()
+	app.Post("/refresh-session", Middleware(), handler.RefreshSession())
+
+	req := httptest.NewRequest(http.MethodPost, "/refresh-session", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer invalid-token")
+
+	res, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed with error: %v", err)
+	}
+
+	if res.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("invalid response code: %v expected 401", res.StatusCode)
+	}
 }
