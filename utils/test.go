@@ -27,11 +27,11 @@ func InvalidRegisterClientPayload() *models.RegisterClientPayload {
 }
 
 // ValidLoginUserPayload returns valid models.LoginUserPayload.
-//  1. Username: Username
+//  1. Username: Username1
 //  2. Password: Password_123
 func ValidLoginUserPayload() *models.LoginUserPayload {
 	return &models.LoginUserPayload{
-		Username: "Username",
+		Username: "Username1",
 		Password: "Password_123",
 	}
 }
