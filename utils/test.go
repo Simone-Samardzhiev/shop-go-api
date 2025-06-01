@@ -2,11 +2,11 @@ package utils
 
 import "api/models"
 
-// ValidRegisterUserPayload returns valid models.RegisterClientPayload.
+// ValidRegisterClientPayload returns valid models.RegisterClientPayload.
 //  1. Email: email@example.com
 //  2. Username: Username
 //  3. Password: Password_123
-func ValidRegisterUserPayload() *models.RegisterClientPayload {
+func ValidRegisterClientPayload() *models.RegisterClientPayload {
 	return &models.RegisterClientPayload{
 		Email:    "email@example.com",
 		Username: "Username",
