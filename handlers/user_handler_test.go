@@ -83,8 +83,7 @@ func BenchmarkDefaultUserHandlerRegisterClient(b *testing.B) {
 		if err != nil {
 			b.Fatalf("marshaling data returned error: %v", err)
 		}
-		buffer := bytes.NewBuffer(data)
-		req := httptest.NewRequest(http.MethodPost, "/register", buffer)
+		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(data))
 		req.Header.Set("Content-Type", "application/json")
 
 		b.StartTimer()
@@ -140,9 +139,8 @@ func TestDefaultUserHandlerRegisterClientWithInvalidPayload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshaling data returned error: %v", err)
 	}
-	buffer := bytes.NewBuffer(data)
 
-	req := httptest.NewRequest(http.MethodPost, "/register", buffer)
+	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(data))
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := app.Test(req, -1)
@@ -167,9 +165,8 @@ func TestDefaultUserHandlerRegisterClientWithExistingEmailAndUsername(t *testing
 	if err != nil {
 		t.Fatalf("marshaling data returned error: %v", err)
 	}
-	buffer := bytes.NewBuffer(data)
 
-	req := httptest.NewRequest(http.MethodPost, "/register", buffer)
+	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(data))
 	req.Header.Set("Content-Type", "application/json")
 	res, err := app.Test(req, -1)
 	if err != nil {

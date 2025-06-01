@@ -21,7 +21,7 @@ func SendRegisterRequest(app *fiber.App, registerHandler fiber.Handler) error {
 	}
 
 	app.Post("/register", registerHandler)
-	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(data))
+	req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewReader(data))
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := app.Test(req, -1)
@@ -46,7 +46,7 @@ func SendLoginRequest(app *fiber.App, loginHandler fiber.Handler) (*models.Token
 	}
 
 	app.Post("/login", loginHandler)
-	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(data))
+	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(data))
 	req.Header.Set("Content-Type", "application/json")
 	res, err := app.Test(req, -1)
 	if err != nil {
