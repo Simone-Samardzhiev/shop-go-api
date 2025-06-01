@@ -14,11 +14,11 @@ func ValidRegisterClientPayload() *models.RegisterClientPayload {
 	}
 }
 
-// InvalidRegisterUserPayload returns invalid models.RegisterClientPayload.
+// InvalidRegisterClientPayload returns invalid models.RegisterClientPayload.
 //  1. Email: invalidEmail
 //  2. Username: User
 //  3. Password: invalidPassword
-func InvalidRegisterUserPayload() *models.RegisterClientPayload {
+func InvalidRegisterClientPayload() *models.RegisterClientPayload {
 	return &models.RegisterClientPayload{
 		Email:    "invalidEmail",
 		Username: "User",
