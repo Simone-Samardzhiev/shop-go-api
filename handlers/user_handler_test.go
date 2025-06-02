@@ -408,3 +408,82 @@ func TestDefaultUserHandlerRefreshSessionWithInvalidToken(t *testing.T) {
 		t.Fatalf("invalid response code: %v expected 401", res.StatusCode)
 	}
 }
+
+// TestDefaultUserHandlerGetUsers tests that getting users's info works.
+func TestDefaultUserHandlerGetUsers(t *testing.T) {
+	handler := SetupWithUsers()
+	app := fiber.New()
+	app.Get("/users", Middleware(), handler.GetUsers())
+	tokens, err := utils.SendLoginAdminRequest(app, handler.Login())
+	if err != nil {
+		t.Fatalf("request failed with error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/users?limit=4&page=2", nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokens.AccessToken))
+	res, err := app.Test(req, -1)
+
+	if err != nil {
+		t.Fatalf("request failed with error: %v", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("invalid response code: %v expected 200", res.StatusCode)
+	}
+
+	expectedEmails := []string{"email4@example.com", "email5@example.com", "email6@example.com", "email7@example.com"}
+	var users []models.UserInfo
+	err = json.NewDecoder(res.Body).Decode(&users)
+	if err != nil {
+		t.Fatalf("decoding response failed with error: %v", err)
+	}
+	if len(users) != len(expectedEmails) {
+		t.Errorf("Expected %d users, got %d", len(expectedEmails), len(users))
+	}
+
+	for i, user := range users {
+		if user.Email != expectedEmails[i] {
+			t.Errorf("Expected user with email %s, got %s", expectedEmails[i], user.Email)
+		}
+	}
+}
+
+// BenchmarkDefaultUserHandlerGetUsers benchmarks the GetUsers method.
+func BenchmarkDefaultUserHandlerGetUsers(b *testing.B) {
+	handler := SetupWithUsers()
+	app := fiber.New()
+	app.Get("/users", Middleware(), handler.GetUsers())
+	tokens, err := utils.SendLoginAdminRequest(app, handler.Login())
+	if err != nil {
+		b.Fatalf("request failed with error: %v", err)
+	}
+
+	for b.Loop() {
+		req := httptest.NewRequest(http.MethodGet, "/users?limit=4&page=2", nil)
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokens.AccessToken))
+
+		res, err := app.Test(req, -1)
+
+		if err != nil {
+			b.Fatalf("request failed with error: %v", err)
+		}
+		if res.StatusCode != http.StatusOK {
+			b.Fatalf("invalid response code: %v expected 200", res.StatusCode)
+		}
+
+		expectedEmails := []string{"email4@example.com", "email5@example.com", "email6@example.com", "email7@example.com"}
+		var users []models.UserInfo
+		err = json.NewDecoder(res.Body).Decode(&users)
+		if err != nil {
+			b.Fatalf("decoding response failed with error: %v", err)
+		}
+		if len(users) != len(expectedEmails) {
+			b.Fatalf("Expected %d users, got %d", len(expectedEmails), len(users))
+		}
+
+		for i, user := range users {
+			if user.Email != expectedEmails[i] {
+				b.Errorf("Expected user with email %s, got %s", expectedEmails[i], user.Email)
+			}
+		}
+	}
+}

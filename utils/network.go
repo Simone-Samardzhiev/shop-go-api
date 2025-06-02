@@ -64,3 +64,34 @@ func SendLoginRequest(app *fiber.App, loginHandler fiber.Handler) (*models.Token
 	}
 	return &tokens, nil
 }
+
+// SendLoginAdminRequest sends an HTTP POST request to the "/login" endpoint with a valid login payload.
+//
+// This function registers the provided handler with the fiber app and verifies the response meets expectations.
+// Returns an error if marshaling the payload, making the request, or verifying the response fails.
+func SendLoginAdminRequest(app *fiber.App, loginHandler fiber.Handler) (*models.TokenGroup, error) {
+	data, err := json.Marshal(ValidAdminLoginPayload())
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal login admin payload: %v", err)
+	}
+
+	app.Post("/login", loginHandler)
+	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(data))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := app.Test(req, -1)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %v", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("invalid response code: %v expected 200", res.StatusCode)
+	}
+
+	var tokens models.TokenGroup
+	err = json.NewDecoder(res.Body).Decode(&tokens)
+	if err != nil {
+		return nil, err
+	}
+	return &tokens, nil
+}
