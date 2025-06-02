@@ -135,7 +135,7 @@ func (h *DefaultUserHandler) GetUsers() fiber.Handler {
 		page := c.Query("page")
 		parsedPage, err := strconv.Atoi(page)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid page", fiber.StatusBadGateway))
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid page", fiber.StatusBadRequest))
 		}
 		if parsedPage < 1 {
 			parsedPage = 1
@@ -146,12 +146,12 @@ func (h *DefaultUserHandler) GetUsers() fiber.Handler {
 		if role == "" {
 			parsedRole = nil
 		} else if !models.RolesMap[role] {
-			return c.Status(fiber.StatusBadGateway).JSON(utils.NewAPIError("Invalid role", fiber.StatusBadGateway))
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid role", fiber.StatusBadRequest))
 		}
 
-		result, errResponse := h.service.GetUsers(c.Context(), parsedLimit, parsedPage, parsedRole)
-		if errResponse != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		result, apiError := h.service.GetUsers(c.Context(), parsedLimit, parsedPage, parsedRole)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
 		}
 
 		return c.Status(fiber.StatusOK).JSON(result)
