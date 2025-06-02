@@ -147,6 +147,9 @@ func (h *DefaultUserHandler) GetUsers() fiber.Handler {
 			parsedRole = nil
 		} else if !models.RolesMap[role] {
 			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid role", fiber.StatusBadRequest))
+		} else {
+			copyRole := role
+			parsedRole = &copyRole
 		}
 
 		result, apiError := h.service.GetUsers(c.Context(), parsedLimit, parsedPage, parsedRole)

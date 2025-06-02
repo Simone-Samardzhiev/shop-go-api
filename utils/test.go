@@ -14,22 +14,10 @@ func ValidRegisterClientPayload() *models.RegisterClientPayload {
 	}
 }
 
-// InvalidRegisterClientPayload returns invalid models.RegisterClientPayload.
-//  1. Email: invalidEmail
-//  2. Username: User
-//  3. Password: invalidPassword
-func InvalidRegisterClientPayload() *models.RegisterClientPayload {
-	return &models.RegisterClientPayload{
-		Email:    "invalidEmail",
-		Username: "User",
-		Password: "invalidPassword",
-	}
-}
-
-// ValidLoginUserPayload returns valid models.LoginUserPayload.
+// ValidLoginClintPayload returns valid models.LoginUserPayload.
 //  1. Username: Username1
 //  2. Password: Password_123
-func ValidLoginUserPayload() *models.LoginUserPayload {
+func ValidLoginClintPayload() *models.LoginUserPayload {
 	return &models.LoginUserPayload{
 		Username: "Username1",
 		Password: "Password_123",

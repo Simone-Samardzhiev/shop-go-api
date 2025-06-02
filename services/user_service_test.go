@@ -48,7 +48,7 @@ func TestDefaultUserServiceAddValidUser(t *testing.T) {
 // with the method AddClient of DefaultUserService.
 func TestDefaultUserServiceAddInvalidUser(t *testing.T) {
 	service := Setup()
-	user := utils.InvalidRegisterClientPayload()
+	user := models.NewRegisterClientPayload("", "", "")
 
 	// Adding the invalid user should result in an error.
 	err := service.AddClient(context.Background(), user)
@@ -69,7 +69,7 @@ func TestDefaultUserServiceAddLogin(t *testing.T) {
 	}
 
 	// Logging as the same user.
-	loginUser := utils.ValidLoginUserPayload()
+	loginUser := utils.ValidLoginClintPayload()
 	_, err = service.Login(context.Background(), loginUser)
 	if err != nil {
 		t.Errorf("Error logging in: %v", err)
@@ -89,7 +89,7 @@ func TestDefaultUserServiceRefreshSession(t *testing.T) {
 	}
 
 	// Login to get refresh token
-	loginPayload := utils.ValidLoginUserPayload()
+	loginPayload := utils.ValidLoginClintPayload()
 	tokenGroup, apiErr := service.Login(context.Background(), loginPayload)
 	if apiErr != nil {
 		t.Fatalf("Login failed: %v", apiErr.Message)
