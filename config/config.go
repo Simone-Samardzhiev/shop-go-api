@@ -8,9 +8,9 @@ import (
 
 // APIConfig holds API configuration
 type APIConfig struct {
-	/// ServerAddr holds the address of the API.
+	// ServerAddr holds the address of the API.
 	ServerAddr string
-	/// IsDebug used to check if the API is for production or development.
+	// IsDebug used to check if the API is for production or development.
 	IsDebug bool
 }
 
@@ -22,7 +22,7 @@ type DatabaseConfig struct {
 	MaxOpenConnections int
 	// MaxIdleConnections specifies the max open idle connections to the database.
 	MaxIdleConnections int
-	// MaxIdleTime specifies the time before idle connection is closed.
+	// MaxIdleTime specifies the time before the idle connection is closed.
 	MaxIdleTime time.Duration
 	// MaxLifetime specifies the time a connection can be used.
 	MaxLifetime time.Duration
@@ -67,7 +67,7 @@ func NewConfig() *Config {
 
 // getEnvVar is used to read environment variables.
 //
-// If a variable exists, the values are returned otherwise the result is the fallback.
+// If the variable exists, the value is returned; otherwise the fallback is returned.
 func getEnvVar(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
@@ -77,7 +77,7 @@ func getEnvVar(key, fallback string) string {
 
 // getEnvVarBool is a specialized version of getEnvVar for bool variables.
 //
-// If the variable exists, the value is returned by checking if the string equals true,
+// If the variable exists, the value is returned by checking if the string equals true;
 // otherwise the fallback is returned.
 func getEnvVarBool(key string, fallback bool) bool {
 	if value, ok := os.LookupEnv(key); ok {
@@ -88,8 +88,7 @@ func getEnvVarBool(key string, fallback bool) bool {
 
 // getEnvVarInt is a specialized version of getEnvVar for int variables.
 //
-// If the variable exists, and it is a valid int the value is returned otherwise
-// the fallback is returned
+// If the variable exists and can be parsed into int, the value is returned; otherwise the fallback is returned.
 func getEnvVarInt(key string, fallback int) int {
 	if value, ok := os.LookupEnv(key); ok {
 		result, err := strconv.Atoi(value)
