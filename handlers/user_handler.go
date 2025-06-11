@@ -24,7 +24,7 @@ type UserHandler interface {
 	// to refresh their session using the refresh token.
 	RefreshSession() fiber.Handler
 
-	// GetUsers returns handler used by admins to see user's information.
+	// GetUsers returns handler used by admins to see users' information.
 	GetUsers() fiber.Handler
 }
 

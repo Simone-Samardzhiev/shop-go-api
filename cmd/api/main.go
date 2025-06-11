@@ -18,23 +18,23 @@ import (
 	"net/http"
 )
 
-// API struct contains the application.
-type API struct {
+// api struct contains the application.
+type api struct {
 	// Conf stores the configuration of the app.
 	Conf     *config.Config
 	Handlers handlers.Handlers
 }
 
 // start mounts the handlers and binds the app to the specified port.
-func (a *API) start() error {
+func (a *api) start() error {
 	app := fiber.New()
 
-	// If the api is for debug, add logger for easier development.
+	// If the group is for debug, add logger for easier development.
 	if a.Conf.ApiConfig.IsDebug {
 		app.Use(logger.New())
 	}
 
-	api := app.Group("/api/v1")
+	group := app.Group("/group/v1")
 	middleware := jwtware.New(jwtware.Config{
 		Claims: &auth.Claims{},
 		SigningKey: jwtware.SigningKey{
@@ -52,24 +52,27 @@ func (a *API) start() error {
 	})
 
 	// Router related to users
-	userGroup := api.Group("/users")
+	userGroup := group.Group("/users")
 	userGroup.Post("/register/client", a.Handlers.UserHandler.RegisterClient())
-	userGroup.Post("/register/admin", middleware, a.Handlers.UserHandler.RegisterUser())
 	userGroup.Post("/login", a.Handlers.UserHandler.Login())
-	userGroup.Get("/refresh", middleware, a.Handlers.UserHandler.RefreshSession())
+	// Handlers that require authentication
+	userGroup.Use(middleware)
+	userGroup.Post("/register/admin", a.Handlers.UserHandler.RegisterUser())
+	userGroup.Get("/refresh", a.Handlers.UserHandler.RefreshSession())
+	userGroup.Get("/usersData", a.Handlers.UserHandler.GetUsers())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }
 
-// New create a new instance of API.
-func New() *API {
+// newAPI create a newAPI instance of api.
+func newAPI() *api {
 	conf := config.NewConfig()
 	db, err := database.Connect(conf.DbConfig)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 
-	return &API{
+	return &api{
 		Conf: conf,
 		Handlers: handlers.Handlers{
 			UserHandler: handlers.NewDefaultUserHandler(
@@ -88,7 +91,8 @@ func main() {
 	if err != nil {
 		log.Printf("Error loading .env file")
 	}
-	api := New()
-	err = api.start()
-	log.Fatalf("Error starting the API with error: %v and configration: %+v", err, api.Conf)
+
+	app := newAPI()
+	err = app.start()
+	log.Fatalf("Error starting the api with error: %v and configration: %+v", err, app.Conf)
 }
