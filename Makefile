@@ -10,6 +10,10 @@ migrate-create:
 migrate-up:
 	@migrate -path $(MIGRATIONS_PATH) -database $(DATABASE_URL) up
 
+.PHONY: migrate-up-test
+migrate-up-test:
+	@migrate -path $(MIGRATIONS_PATH) -database $(TEST_DATABASE_URL) up
+
 .PHONY: migrate-down
 migrate-down:
 	@migrate -path  $(MIGRATIONS_PATH) -database $(DATABASE_URL) down
