@@ -109,17 +109,17 @@ type User struct {
 	Email    string
 	Username string
 	Password string
-	UserRole UserRole
+	Role     UserRole
 }
 
 // NewUser create new instance of User.
-func NewUser(id uuid.UUID, email string, username string, password string, userType UserRole) *User {
+func NewUser(id uuid.UUID, email string, username string, password string, role UserRole) *User {
 	return &User{
 		Id:       id,
 		Email:    email,
 		Username: username,
 		Password: password,
-		UserRole: userType,
+		Role:     role,
 	}
 }
 
@@ -129,15 +129,15 @@ type UserInfo struct {
 	Id       uuid.UUID `json:"id"`
 	Email    string    `json:"email"`
 	Username string    `json:"username"`
-	UserRole UserRole  `json:"user_role"`
+	Role     UserRole  `json:"role"`
 }
 
 // NewUserInfo returns a new instance of UserInfo.
-func NewUserInfo(id uuid.UUID, email, username string, userRole UserRole) *UserInfo {
+func NewUserInfo(id uuid.UUID, email, username string, role UserRole) *UserInfo {
 	return &UserInfo{
 		Id:       id,
 		Email:    email,
 		Username: username,
-		UserRole: userRole,
+		Role:     role,
 	}
 }

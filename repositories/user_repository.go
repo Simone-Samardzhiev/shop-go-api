@@ -129,7 +129,7 @@ func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*
 			r.users[i].Id,
 			r.users[i].Email,
 			r.users[i].Username,
-			r.users[i].UserRole,
+			r.users[i].Role,
 		))
 	}
 
@@ -139,14 +139,14 @@ func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*
 func (r *MemoryUserRepository) GetUsersByRole(_ context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error) {
 	filtered := make([]*models.UserInfo, 0)
 	for _, u := range r.users {
-		if u.UserRole == role {
+		if u.Role == role {
 			filtered = append(
 				filtered,
 				models.NewUserInfo(
 					u.Id,
 					u.Email,
 					u.Username,
-					u.UserRole,
+					u.Role,
 				),
 			)
 		}
@@ -175,7 +175,7 @@ func (r *PostgresUserRepository) AddUser(ctx context.Context, user *models.User)
 		user.Email,
 		user.Username,
 		user.Password,
-		user.UserRole,
+		user.Role,
 	)
 
 	return err
@@ -203,7 +203,7 @@ func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username
 	)
 
 	var user models.User
-	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.UserRole)
+	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.Role)
 	return &user, err
 }
 
@@ -235,7 +235,7 @@ func (r *PostgresUserRepository) GetUsers(ctx context.Context, limit, page int) 
 
 	for rows.Next() {
 		var info models.UserInfo
-		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.UserRole)
+		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.Role)
 		if err != nil {
 			return result, err
 		}
@@ -273,7 +273,7 @@ func (r *PostgresUserRepository) GetUsersByRole(ctx context.Context, limit, page
 
 	for rows.Next() {
 		var info models.UserInfo
-		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.UserRole)
+		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.Role)
 		if err != nil {
 			return result, err
 		}
