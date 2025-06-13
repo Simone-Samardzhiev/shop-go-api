@@ -1,0 +1,142 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    "email": "user1@example.com",
+    "username": "john_doe",
+    "password": "Password1!",
+    "role": "admin"
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-2345-67890abcdef1",
+    "email": "jane_smith@example.com",
+    "username": "jane_s",
+    "password": "SecurePass2@",
+    "role": "client"
+  },
+  {
+    "id": "c3d4e5f6-a7b8-9012-3456-7890abcdef23",
+    "email": "alex.wilson@example.com",
+    "username": "alexw",
+    "password": "MySecretPass3#",
+    "role": "delivery"
+  },
+  {
+    "id": "d4e5f6a7-b8c9-0123-4567-890abcdef345",
+    "email": "emma.davis@example.com",
+    "username": "emmad",
+    "password": "Password4$",
+    "role": "workshop"
+  },
+  {
+    "id": "e5f6a7b8-c9d0-1234-5678-90abcdef4567",
+    "email": "michael.brown@example.com",
+    "username": "mikeb",
+    "password": "StrongPassword5%",
+    "role": "admin"
+  },
+  {
+    "id": "f6a7b8c9-d0e1-2345-6789-0abcdef56789",
+    "email": "olivia.jones@example.com",
+    "username": "oliviaj",
+    "password": "Passw0rd6&",
+    "role": "client"
+  },
+  {
+    "id": "a7b8c9d0-e1f2-3456-7890-abcdef67890a",
+    "email": "william.garcia@example.com",
+    "username": "willg",
+    "password": "VerySecure7*",
+    "role": "delivery"
+  },
+  {
+    "id": "b8c9d0e1-f2a3-4567-8901-bcdef78901ab",
+    "email": "sophia.rodriguez@example.com",
+    "username": "sophier",
+    "password": "MyPassword8(",
+    "role": "workshop"
+  },
+  {
+    "id": "c9d0e1f2-a3b4-5678-9012-cdef89012abc",
+    "email": "james.martinez@example.com",
+    "username": "jimmym",
+    "password": "NewPass9)",
+    "role": "admin"
+  },
+  {
+    "id": "d0e1f2a3-b4c5-6789-0123-def90123abcd",
+    "email": "isabella.hernandez@example.com",
+    "username": "isabellah",
+    "password": "SuperPass10!",
+    "role": "client"
+  },
+  {
+    "id": "e1f2a3b4-c5d6-7890-1234-ef012345bcde",
+    "email": "benjamin.lopez@example.com",
+    "username": "benl",
+    "password": "UserPass11@",
+    "role": "delivery"
+  },
+  {
+    "id": "f2a3b4c5-d6e7-8901-2345-f1234567cdef",
+    "email": "mia.gonzalez@example.com",
+    "username": "miag",
+    "password": "MyStrongPass12#",
+    "role": "workshop"
+  },
+  {
+    "id": "a3b4c5d6-e7f8-9012-3456-12345678def0",
+    "email": "daniel.perez@example.com",
+    "username": "danp",
+    "password": "SecretPass13$",
+    "role": "admin"
+  },
+  {
+    "id": "b4c5d6e7-f8a9-0123-4567-23456789ef01",
+    "email": "chloe.sanchez@example.com",
+    "username": "chloes",
+    "password": "PasswOrd14%",
+    "role": "client"
+  },
+  {
+    "id": "c5d6e7f8-a9b0-1234-5678-34567890f012",
+    "email": "david.ramirez@example.com",
+    "username": "davidr",
+    "password": "SecurePass15&",
+    "role": "delivery"
+  },
+  {
+    "id": "d6e7f8a9-b0c1-2345-6789-456789010123",
+    "email": "ella.torres@example.com",
+    "username": "ellat",
+    "password": "MyPassword16*",
+    "role": "workshop"
+  },
+  {
+    "id": "e7f8a9b0-c1d2-3456-7890-567890121234",
+    "email": "joseph.flores@example.com",
+    "username": "joef",
+    "password": "NewPass17(",
+    "role": "admin"
+  },
+  {
+    "id": "f8a9b0c1-d2e3-4567-8901-678901232345",
+    "email": "gracie.rivera@example.com",
+    "username": "gracier",
+    "password": "SuperPass18)",
+    "role": "client"
+  },
+  {
+    "id": "a9b0c1d2-e3f4-5678-9012-789012343456",
+    "email": "samuel.gomez@example.com",
+    "username": "samg",
+    "password": "UserPass19!",
+    "role": "delivery"
+  },
+  {
+    "id": "b0c1d2e3-f4a5-6789-0123-890123454567",
+    "email": "lily.diaz@example.com",
+    "username": "lilyd",
+    "password": "LastPass20@",
+    "role": "workshop"
+  }
+]
