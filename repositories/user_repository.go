@@ -213,7 +213,7 @@ func (r *PostgresUserRepository) GetUsers(ctx context.Context, limit, page int) 
 
 	rows, err := r.db.QueryContext(
 		ctx,
-		` SELECT id, email, username, password, user_role
+		` SELECT id, email, username, user_role
  		FROM users
  		OFFSET $1
  		LIMIT $2
@@ -251,7 +251,7 @@ func (r *PostgresUserRepository) GetUsersByRole(ctx context.Context, limit, page
 
 	rows, err := r.db.QueryContext(
 		ctx,
-		`SELECT id, email, username, password, user_role
+		`SELECT id, email, username, user_role
 		FROM users 
 		WHERE user_role = $1 
 		OFFSET $2 
