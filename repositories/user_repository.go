@@ -1,12 +1,13 @@
 package repositories
 
 import (
-	"api/auth"
 	"api/models"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"github.com/google/uuid"
+	"os"
 )
 
 // UserRepository defines methods used to modify user data.
@@ -38,6 +39,11 @@ type UserRepository interface {
 	// The page is used to specify which page to return.
 	// The role is used to filter users by specific role.
 	GetUsersByRole(ctx context.Context, limit, page int, role models.UserRole) ([]*models.UserInfo, error)
+
+	// GetUserById gets a user by specified id.
+	//
+	// Returns an error if a user with the specified id doesn't exist or there was a database error.
+	GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -54,37 +60,31 @@ func NewMemoryUserRepository() *MemoryUserRepository {
 
 // NewMemoryUserRepositoryWithUsers creates a new instance of MemoryUserRepository.
 //
-// Admin credentials:
-//  1. Email: admin@example.com
-//  2. Username: AdminUsername
-//  3. Password: Password_123
-//
-// User emails and usernames go from 1 to 9(email1@example.com - email9@example.com and Username1 - Username9).
+// The function loads users from testdata/users.json.
 //
 // The password is the same for all (Password_123)
 func NewMemoryUserRepositoryWithUsers() (*MemoryUserRepository, error) {
-	users := []*models.User{
-		models.NewUser(uuid.New(), "admin@example.com", "AdminUsername", "Password_123", models.Admin),
-		models.NewUser(uuid.New(), "email1@example.com", "Username1", "Password_123", models.Workshop),
-		models.NewUser(uuid.New(), "email2@example.com", "Username2", "Password_123", models.Delivery),
-		models.NewUser(uuid.New(), "email3@example.com", "Username3", "Password_123", models.Admin),
-		models.NewUser(uuid.New(), "email4@example.com", "Username4", "Password_123", models.Client),
-		models.NewUser(uuid.New(), "email5@example.com", "Username5", "Password_123", models.Client),
-		models.NewUser(uuid.New(), "email6@example.com", "Username6", "Password_123", models.Client),
-		models.NewUser(uuid.New(), "email7@example.com", "Username7", "Password_123", models.Workshop),
-		models.NewUser(uuid.New(), "email8@example.com", "Username8", "Password_123", models.Delivery),
-		models.NewUser(uuid.New(), "email9@example.com", "Username9", "Password_123", models.Client),
+	file, err := os.Open("testdata/users.json")
+	if err != nil {
+		return nil, err
 	}
-
-	for _, user := range users {
-		hash, err := auth.HashPassword(user.Password)
-		if err != nil {
-			return nil, err
+	defer func() {
+		closeErr := file.Close()
+		if closeErr != nil {
+			return
 		}
-		user.Password = hash
+	}()
+
+	var users []*models.User
+	err = json.NewDecoder(file).Decode(&users)
+	if err != nil {
+		return nil, err
 	}
 
-	return &MemoryUserRepository{users: users}, nil
+	repo := NewMemoryUserRepository()
+	repo.users = users
+
+	return repo, nil
 }
 
 func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) error {
@@ -159,6 +159,15 @@ func (r *MemoryUserRepository) GetUsersByRole(_ context.Context, limit, page int
 	}
 
 	return filtered[offset:end], nil
+}
+
+func (r *MemoryUserRepository) GetUserById(_ context.Context, id uuid.UUID) (*models.UserInfo, error) {
+	for _, u := range r.users {
+		if u.Id == id {
+			return models.NewUserInfo(u.Id, u.Email, u.Username, u.Role), nil
+		}
+	}
+	return nil, sql.ErrNoRows
 }
 
 // PostgresUserRepository implements UserRepository using postgres.
@@ -281,6 +290,20 @@ func (r *PostgresUserRepository) GetUsersByRole(ctx context.Context, limit, page
 	}
 
 	return result, nil
+}
+
+func (r *PostgresUserRepository) GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, error) {
+	row := r.db.QueryRowContext(
+		ctx,
+		`SELECT id, email, username, user_role
+		FROM users
+		WHERE id = $1`,
+		id,
+	)
+
+	var user models.UserInfo
+	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Role)
+	return &user, err
 }
 
 // NewPostgresUserRepository creates a new instance of PostgresUserRepository

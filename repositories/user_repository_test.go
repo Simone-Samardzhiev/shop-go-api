@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -45,23 +46,23 @@ func TestMain(m *testing.M) {
 	cleanUpDatabase()
 }
 
-// seedDatabase seeds the database with users read from testdata/user.json.
+// seedDatabase seeds the database with users read from testdata/users.json.
 func seedDatabase() {
-	file, err := os.Open("testdata/user.json")
+	file, err := os.Open("testdata/users.json")
 	if err != nil {
-		log.Fatalf("Error opening seed.sql file: %v", err)
+		log.Fatalf("Error opening users.json file: %v", err)
 	}
 	defer func() {
 		closeErr := file.Close()
 		if closeErr != nil {
-			log.Fatalf("Error closing seed.sql file: %v", err)
+			log.Fatalf("Error closing users.json file: %v", err)
 		}
 	}()
 
 	var users []models.User
 	err = json.NewDecoder(file).Decode(&users)
 	if err != nil {
-		log.Fatalf("Error decoding seed.sql file: %v", err)
+		log.Fatalf("Error decoding users.json file: %v", err)
 	}
 
 	for _, user := range users {
@@ -207,7 +208,7 @@ func TestPostgresUserRepositoryGetUserByUsername(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result, err := postgresRepository.GetUserByUsername(context.Background(), test.username)
-			if err == test.expectedError {
+			if errors.Is(err, test.expectedError) {
 				return
 			} else {
 				t.Errorf("Errors doesn't match: expected: %v, got: %v", test.expectedError, err)
@@ -325,6 +326,42 @@ func TestPostgresUserRepositoryGetUsersByRole(t *testing.T) {
 				if result[i].Email != test.expectedEmails[i] {
 					t.Fatalf("Error getting user email: expected: %s, got: %s", test.expectedEmails[i], result[i].Email)
 				}
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepositoryGetUserById(t *testing.T) {
+	seedDatabase()
+	t.Cleanup(cleanUpDatabase)
+
+	cases := []struct {
+		id            uuid.UUID
+		expectedEmail string
+		expectedError error
+	}{
+		{
+			id:            uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expectedEmail: "user1@example.com",
+			expectedError: nil,
+		}, {
+			id:            uuid.New(),
+			expectedEmail: "",
+			expectedError: sql.ErrNoRows,
+		},
+	}
+
+	for i, test := range cases {
+		t.Run(fmt.Sprintf("case-%d", i), func(t *testing.T) {
+			result, err := postgresRepository.GetUserById(context.Background(), test.id)
+			if errors.Is(err, test.expectedError) {
+				return
+			} else {
+				t.Errorf("Errors doesn't match: expected: %v, got: %v", test.expectedError, err)
+			}
+
+			if result.Email != test.expectedEmail {
+				t.Errorf("Email doesn't match: expected: %v, got: %v", test.expectedEmail, result.Email)
 			}
 		})
 	}
@@ -457,44 +494,42 @@ func TestMemoryUserRepositoryGetUsers(t *testing.T) {
 			limit:          4,
 			page:           1,
 			expectedSize:   4,
-			expectedEmails: []string{"admin@example.com", "email1@example.com", "email2@example.com", "email3@example.com"},
-		},
-		{
+			expectedEmails: []string{"user1@example.com", "jane_smith@example.com", "alex.wilson@example.com", "emma.davis@example.com"},
+		}, {
 			limit:          4,
 			page:           2,
 			expectedSize:   4,
-			expectedEmails: []string{"email4@example.com", "email5@example.com", "email6@example.com", "email7@example.com"},
-		},
-		{
+			expectedEmails: []string{"michael.brown@example.com", "olivia.jones@example.com", "william.garcia@example.com", "sophia.rodriguez@example.com"},
+		}, {
 			limit:          4,
-			page:           3,
-			expectedSize:   2,
-			expectedEmails: []string{"email8@example.com", "email9@example.com"},
-		},
-		{
+			page:           5,
+			expectedSize:   4,
+			expectedEmails: []string{"joseph.flores@example.com", "gracie.rivera@example.com", "samuel.gomez@example.com", "lily.diaz@example.com"},
+		}, {
 			limit:          4,
-			page:           4,
+			page:           6,
 			expectedSize:   0,
 			expectedEmails: nil,
 		},
 	}
 
-	for caseNum, c := range cases {
-		t.Run(fmt.Sprintf("case-%d", caseNum), func(t *testing.T) {
-			result, err := repo.GetUsers(context.Background(), c.limit, c.page)
-			if err != nil {
-				t.Fatalf("Error getting users: %v", err)
+	for i, test := range cases {
+		t.Run(fmt.Sprintf("case-%d", i), func(t *testing.T) {
+			result, repoErr := repo.GetUsers(context.Background(), test.limit, test.page)
+			if repoErr != nil {
+				t.Fatalf("Error getting users: %v", repoErr)
 			}
-			if len(result) != c.expectedSize {
-				t.Fatalf("Error getting users: %v, expected %v", len(result), c.expectedSize)
+			if len(result) != test.expectedSize {
+				t.Fatalf("Error getting users: %v, expected %v", len(result), test.expectedSize)
 			}
 
-			for i := 0; i < c.expectedSize; i++ {
-				if result[i].Email != c.expectedEmails[i] {
-					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmails[i])
+			for i := 0; i < test.expectedSize; i++ {
+				if result[i].Email != test.expectedEmails[i] {
+					t.Fatalf("Error getting user email: expected: %s, got: %s", test.expectedEmails[i], result[i].Email)
 				}
 			}
 		})
+
 	}
 }
 
@@ -517,37 +552,50 @@ func TestMemoryUserRepositoryGetUsersByRole(t *testing.T) {
 			page:           1,
 			role:           models.Client,
 			expectedSize:   4,
-			expectedEmails: []string{"email4@example.com", "email5@example.com", "email6@example.com", "email9@example.com"},
+			expectedEmails: []string{"jane_smith@example.com", "olivia.jones@example.com", "isabella.hernandez@example.com", "chloe.sanchez@example.com"},
 		}, {
-			limit:          1,
-			page:           1,
-			role:           models.Workshop,
-			expectedSize:   1,
-			expectedEmails: []string{"email1@example.com"},
-		}, {
-			limit:          1,
+			limit:          4,
 			page:           2,
-			role:           models.Workshop,
+			role:           models.Client,
 			expectedSize:   1,
-			expectedEmails: []string{"email7@example.com"},
+			expectedEmails: []string{"gracie.rivera@example.com"},
+		}, {
+			limit:          4,
+			page:           1,
+			role:           models.Admin,
+			expectedSize:   4,
+			expectedEmails: []string{"user1@example.com", "michael.brown@example.com", "james.martinez@example.com", "daniel.perez@example.com"},
 		},
 	}
 
-	for caseNum, c := range cases {
-		t.Run(fmt.Sprintf("case-%d", caseNum), func(t *testing.T) {
-			result, err := repo.GetUsersByRole(context.Background(), c.limit, c.page, c.role)
-			if err != nil {
-				t.Fatalf("Error getting users: %v", err)
+	for i, test := range cases {
+		t.Run(fmt.Sprintf("case-%d", i), func(t *testing.T) {
+			result, repoErr := repo.GetUsersByRole(context.Background(), test.limit, test.page, test.role)
+			if repoErr != nil {
+				t.Fatalf("Error getting users by role: %v", repoErr)
 			}
-			if len(result) != c.expectedSize {
-				t.Fatalf("Error getting users: %v, expected %v", len(result), c.expectedSize)
+			if len(result) != test.expectedSize {
+				t.Fatalf("Error getting users by role: %v, expected %v", len(result), test.expectedSize)
 			}
 
-			for i := 0; i < c.expectedSize; i++ {
-				if result[i].Email != c.expectedEmails[i] {
-					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmails[i])
+			for i := 0; i < test.expectedSize; i++ {
+				if result[i].Email != test.expectedEmails[i] {
+					t.Fatalf("Error getting user email: expected: %s, got: %s", test.expectedEmails[i], result[i].Email)
 				}
 			}
 		})
 	}
 }
+
+//func TestMemoryUserRepositoryGetUserById(t *testing.T) {
+//	repo, err := NewMemoryUserRepositoryWithUsers()
+//	if err != nil {
+//		t.Fatalf("Error creating memory user repository: %v", err)
+//	}
+//
+//	cases := []struct {
+//		id            uuid.UUID
+//		expectedEmail string
+//		expectedError error
+//	}
+//}
