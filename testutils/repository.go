@@ -62,9 +62,12 @@ func SeedUsersTable(repository repositories.UserRepository) error {
 	return nil
 }
 
+// CleanupDatabase will truncate and reset the identity for each table name passed.
+//
+// Note: Use with caution only on test databases.
 func CleanupDatabase(tableNames []string, db *sql.DB) error {
 	for _, tableName := range tableNames {
-		_, err := db.Exec("TRUNCATE TABLE $1 RESTART IDENTITY CASCADE", tableName)
+		_, err := db.Exec("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE")
 
 		if err != nil {
 			return err
