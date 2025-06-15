@@ -4,6 +4,7 @@ import (
 	"api/auth"
 	"api/models"
 	"api/repositories"
+	"context"
 	"database/sql"
 	_ "embed"
 	"encoding/json"
@@ -52,7 +53,7 @@ func SeedUsersTable(repository repositories.UserRepository) error {
 	}
 
 	for _, user := range users {
-		repoErr := repository.AddUser(nil, user)
+		repoErr := repository.AddUser(context.Background(), user)
 		if repoErr != nil {
 			return repoErr
 		}
