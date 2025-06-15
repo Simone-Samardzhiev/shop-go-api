@@ -4,10 +4,8 @@ import (
 	"api/models"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"github.com/google/uuid"
-	"os"
 )
 
 // UserRepository defines methods used to modify user data.
@@ -59,35 +57,6 @@ func NewMemoryUserRepository(user []*models.User) *MemoryUserRepository {
 		user = make([]*models.User, 0)
 	}
 	return &MemoryUserRepository{users: user}
-}
-
-// NewMemoryUserRepositoryWithUsers creates a new instance of MemoryUserRepository.
-//
-// The function loads users from testdata/users.json.
-//
-// The password is the same for all (Password_123)
-func NewMemoryUserRepositoryWithUsers() (*MemoryUserRepository, error) {
-	file, err := os.Open("testdata/users.json")
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		closeErr := file.Close()
-		if closeErr != nil {
-			return
-		}
-	}()
-
-	var users []*models.User
-	err = json.NewDecoder(file).Decode(&users)
-	if err != nil {
-		return nil, err
-	}
-
-	repo := NewMemoryUserRepository()
-	repo.users = users
-
-	return repo, nil
 }
 
 func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) error {
