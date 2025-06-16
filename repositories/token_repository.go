@@ -27,11 +27,11 @@ type TokenRepository interface {
 //
 // Mostly used to mock TokenRepository.
 type MemoryTokenRepository struct {
-	tokens []models.Token
+	tokens []*models.Token
 }
 
 func (r *MemoryTokenRepository) AddToken(_ context.Context, token *models.Token) error {
-	r.tokens = append(r.tokens, *token)
+	r.tokens = append(r.tokens, token)
 	return nil
 }
 
@@ -55,9 +55,13 @@ func (r *MemoryTokenRepository) DeleteToken(_ context.Context, id uuid.UUID) (bo
 }
 
 // NewMemoryTokenRepository return a new instance of MemoryTokenRepository.
-func NewMemoryTokenRepository() *MemoryTokenRepository {
+func NewMemoryTokenRepository(tokens []*models.Token) *MemoryTokenRepository {
+	if tokens == nil {
+		tokens = make([]*models.Token, 0)
+	}
+
 	return &MemoryTokenRepository{
-		tokens: []models.Token{},
+		tokens: tokens,
 	}
 }
 
