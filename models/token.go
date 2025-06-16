@@ -7,9 +7,9 @@ import (
 
 // Token stores token data.
 type Token struct {
-	Id        uuid.UUID
-	ExpiresAt time.Time
-	UserId    uuid.UUID
+	Id        uuid.UUID `json:"id"`
+	ExpiresAt time.Time `json:"expires_at"`
+	UserId    uuid.UUID `json:"user_id"`
 }
 
 // NewToken returns a new instance of Token
