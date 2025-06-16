@@ -13,6 +13,9 @@ import (
 //go:embed testdata/users.json
 var jsonUsers []byte
 
+//go:embed testdata/tokens.json
+var jsonTokens []byte
+
 // getUsers decodes users from jsonUsers and returns them as slice.
 //
 // The function also hashes each user password before returning them.
@@ -46,7 +49,7 @@ func NewMemoryUserRepositoryWithUsers() (*repositories.MemoryUserRepository, err
 }
 
 // SeedUsersTable seeds users table with users loaded from testdata/users.json.
-func SeedUsersTable(repository repositories.UserRepository) error {
+func SeedUsersTable(repository *repositories.PostgresUserRepository) error {
 	users, err := getUsers()
 	if err != nil {
 		return err
@@ -59,6 +62,44 @@ func SeedUsersTable(repository repositories.UserRepository) error {
 		}
 	}
 
+	return nil
+}
+
+// getTokens decodes tokens for jsonTokens and returns them as slice.
+func getTokens() ([]*models.Token, error) {
+	var tokens []*models.Token
+	err := json.Unmarshal(jsonTokens, &tokens)
+	if err != nil {
+		return nil, err
+	}
+	return tokens, nil
+}
+
+// NewMemoryTokenRepositoryWithTokens creates a new instance of repositories.MemoryTokenRepository.
+//
+// The function also loads the tokens from testdata/tokens.json.
+func NewMemoryTokenRepositoryWithTokens() (*repositories.MemoryTokenRepository, error) {
+	tokens, err := getTokens()
+	if err != nil {
+		return nil, err
+	}
+
+	return repositories.NewMemoryTokenRepository(tokens), nil
+}
+
+// SeedTokensTable seeds tokens table with tokens loaded from testdata/tokens.json.
+func SeedTokensTable(repository *repositories.PostgresTokenRepository) error {
+	tokens, err := getTokens()
+	if err != nil {
+		return err
+	}
+
+	for _, token := range tokens {
+		repoErr := repository.AddToken(context.Background(), token)
+		if repoErr != nil {
+			return repoErr
+		}
+	}
 	return nil
 }
 

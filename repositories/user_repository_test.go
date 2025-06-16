@@ -2,62 +2,17 @@ package repositories_test
 
 import (
 	"api/models"
-	"api/repositories"
-	"api/testutils"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"log"
-	"os"
 	"testing"
 )
 
-var postgresRepository *repositories.PostgresUserRepository
-var db *sql.DB
-
-// TestMain will load the .env.test file and create a connection to the test database.
-func TestMain(m *testing.M) {
-	err := godotenv.Load("./../.env.test")
-	if err != nil {
-		log.Fatalf("Error loading .env.test file")
-	}
-
-	connectionStr := os.Getenv("DATABASE_URL")
-	if connectionStr == "" {
-		log.Fatalf("DATABASE_URL is not set")
-	}
-
-	db, err = sql.Open("postgres", connectionStr)
-	if err != nil {
-		log.Fatalf("Error opening database connection: %v", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("Error pinging database connection: %v", err)
-	}
-	postgresRepository = repositories.NewPostgresUserRepository(db)
-	m.Run()
-}
-
-// MemoryRepository will return [repositories.MemoryUserRepository] with loaded users
-// or fail the test if loading users fails.
-func MemoryRepository(t *testing.T) *repositories.MemoryUserRepository {
-	t.Helper()
-
-	repo, err := testutils.NewMemoryUserRepositoryWithUsers()
-	if err != nil {
-		t.Fatalf("Error creating memory user repository: %v", err)
-	}
-	return repo
-}
-
-func TestMemoryUserRepositoryAddUser(t *testing.T) {
-	repo := MemoryRepository(t)
+func TestMemoryUserRepository_AddUser(t *testing.T) {
+	repo := memoryUserRepository(t)
 
 	tests := []struct {
 		name          string
@@ -92,8 +47,8 @@ func TestMemoryUserRepositoryAddUser(t *testing.T) {
 	}
 }
 
-func TestMemoryUserRepositoryCheckEmailAndUsername(t *testing.T) {
-	repo := MemoryRepository(t)
+func TestMemoryUserRepository_CheckEmailAndUsername(t *testing.T) {
+	repo := memoryUserRepository(t)
 
 	tests := []struct {
 		name     string
@@ -138,8 +93,8 @@ func TestMemoryUserRepositoryCheckEmailAndUsername(t *testing.T) {
 	}
 }
 
-func TestMemoryUserRepositoryGetUserByUsername(t *testing.T) {
-	repo := MemoryRepository(t)
+func TestMemoryUserRepository_GetUserByUsername(t *testing.T) {
+	repo := memoryUserRepository(t)
 
 	tests := []struct {
 		name          string
@@ -177,8 +132,8 @@ func TestMemoryUserRepositoryGetUserByUsername(t *testing.T) {
 	}
 }
 
-func TestMemoryUserRepositoryGetUsers(t *testing.T) {
-	repo := MemoryRepository(t)
+func TestMemoryUserRepository_GetUsers(t *testing.T) {
+	repo := memoryUserRepository(t)
 
 	tests := []struct {
 		page          int
@@ -220,8 +175,8 @@ func TestMemoryUserRepositoryGetUsers(t *testing.T) {
 	}
 }
 
-func TestMemoryUserRepositoryGetUsersByRole(t *testing.T) {
-	repo := MemoryRepository(t)
+func TestMemoryUserRepository_GetUsersByRole(t *testing.T) {
+	repo := memoryUserRepository(t)
 
 	tests := []struct {
 		role          models.UserRole
@@ -273,8 +228,8 @@ func TestMemoryUserRepositoryGetUsersByRole(t *testing.T) {
 	}
 }
 
-func TestMemoryUserRepositoryGetUserByID(t *testing.T) {
-	repo := MemoryRepository(t)
+func TestMemoryUserRepository_GetUserByID(t *testing.T) {
+	repo := memoryUserRepository(t)
 
 	tests := []struct {
 		name          string
@@ -312,26 +267,9 @@ func TestMemoryUserRepositoryGetUserByID(t *testing.T) {
 	}
 }
 
-// seedDatabase will add users to the test database.
-func seedDatabase(t *testing.T) {
-	t.Helper()
-	err := testutils.SeedUsersTable(postgresRepository)
-	if err != nil {
-		t.Fatalf("Error seeding database: %v", err)
-	}
-}
-
-// cleanUpDatabase will truncate users table and reset the identity.
-func cleanUpDatabase() {
-	err := testutils.CleanupDatabase([]string{"users"}, db)
-	if err != nil {
-		log.Fatalf("Error cleaning up database: %v", err)
-	}
-}
-
-func TestPostgresUserRepositoryAddUser(t *testing.T) {
-	seedDatabase(t)
-	t.Cleanup(cleanUpDatabase)
+func TestPostgresUserRepository_AddUser(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
 
 	tests := []struct {
 		name          string
@@ -355,7 +293,7 @@ func TestPostgresUserRepositoryAddUser(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := postgresRepository.AddUser(context.Background(), test.user)
+			err := userPostgresRepository.AddUser(context.Background(), test.user)
 
 			if test.shouldSucceed && err != nil {
 				t.Errorf("Error adding user: %v", err)
@@ -366,9 +304,9 @@ func TestPostgresUserRepositoryAddUser(t *testing.T) {
 	}
 }
 
-func TestPostgresUserRepositoryCheckEmailAndUsername(t *testing.T) {
-	seedDatabase(t)
-	t.Cleanup(cleanUpDatabase)
+func TestPostgresUserRepository_CheckEmailAndUsername(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
 
 	tests := []struct {
 		name     string
@@ -401,7 +339,7 @@ func TestPostgresUserRepositoryCheckEmailAndUsername(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := postgresRepository.CheckEmailAndUsername(context.Background(), test.email, test.username)
+			result, err := userPostgresRepository.CheckEmailAndUsername(context.Background(), test.email, test.username)
 
 			if err != nil {
 				t.Errorf("Error checking email and username: %v", err)
@@ -413,9 +351,9 @@ func TestPostgresUserRepositoryCheckEmailAndUsername(t *testing.T) {
 	}
 }
 
-func TestPostgresUserRepositoryGetUserByUsername(t *testing.T) {
-	seedDatabase(t)
-	t.Cleanup(cleanUpDatabase)
+func TestPostgresUserRepository_GetUserByUsername(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
 
 	tests := []struct {
 		name          string
@@ -438,7 +376,7 @@ func TestPostgresUserRepositoryGetUserByUsername(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			user, err := postgresRepository.GetUserByUsername(context.Background(), test.username)
+			user, err := userPostgresRepository.GetUserByUsername(context.Background(), test.username)
 
 			if errors.Is(err, test.expectedError) {
 				return
@@ -453,9 +391,9 @@ func TestPostgresUserRepositoryGetUserByUsername(t *testing.T) {
 	}
 }
 
-func TestPostgresUserRepositoryGetUsers(t *testing.T) {
-	seedDatabase(t)
-	t.Cleanup(cleanUpDatabase)
+func TestPostgresUserRepository_GetUsers(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
 
 	tests := []struct {
 		page          int
@@ -479,7 +417,7 @@ func TestPostgresUserRepositoryGetUsers(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
-			result, err := postgresRepository.GetUsers(context.Background(), test.limit, test.page)
+			result, err := userPostgresRepository.GetUsers(context.Background(), test.limit, test.page)
 			if err != nil {
 				t.Errorf("Error getting users: %v", err)
 			}
@@ -497,9 +435,9 @@ func TestPostgresUserRepositoryGetUsers(t *testing.T) {
 	}
 }
 
-func TestPostgresUserRepositoryGetUsersByRole(t *testing.T) {
-	seedDatabase(t)
-	t.Cleanup(cleanUpDatabase)
+func TestPostgresUserRepository_GetUsersByRole(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
 
 	tests := []struct {
 		role          models.UserRole
@@ -532,7 +470,7 @@ func TestPostgresUserRepositoryGetUsersByRole(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
-			result, err := postgresRepository.GetUsersByRole(context.Background(), test.limit, test.page, test.role)
+			result, err := userPostgresRepository.GetUsersByRole(context.Background(), test.limit, test.page, test.role)
 
 			if err != nil {
 				t.Errorf("Error getting users: %v", err)
@@ -551,9 +489,9 @@ func TestPostgresUserRepositoryGetUsersByRole(t *testing.T) {
 	}
 }
 
-func TestPostgresUserRepositoryGetUserByID(t *testing.T) {
-	seedDatabase(t)
-	t.Cleanup(cleanUpDatabase)
+func TestPostgresUserRepository_GetUserByID(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
 
 	tests := []struct {
 		name          string
@@ -576,7 +514,7 @@ func TestPostgresUserRepositoryGetUserByID(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := postgresRepository.GetUserById(context.Background(), test.id)
+			result, err := userPostgresRepository.GetUserById(context.Background(), test.id)
 
 			if errors.Is(err, test.expectedError) {
 				return
