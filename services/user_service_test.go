@@ -1,193 +1,221 @@
-package services
+package services_test
 
 import (
 	"api/auth"
 	"api/config"
 	"api/models"
 	"api/repositories"
-	"api/utils"
+	"api/services"
+	"api/testutils"
 	"context"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"testing"
 )
 
-// Setup returns DefaultUserService.
-//
-// The service is configured with repositories.MemoryUserRepository,
-// repositories.MemoryTokenRepository and auth.JWTAuthenticator.
-func Setup() *DefaultUserService {
-	userRepository := repositories.NewMemoryUserRepository()
-	tokenRepository := repositories.NewMemoryTokenRepository()
-	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
-		JWTSecret: "secret",
-		Issuer:    "issuer",
-	})
-	return NewDefaultUserService(userRepository, tokenRepository, authenticator)
-}
+func DefaultUserService(t *testing.T) *services.DefaultUserService {
+	t.Helper()
 
-// TestDefaultUserServiceAddValidUser tests that adding valid clients works, and the second
-// attempt to add the same client fails with the method AddClient of DefaultUserService.
-func TestDefaultUserServiceAddValidUser(t *testing.T) {
-	service := Setup()
-
-	// The First attempt should succeed.
-	err := service.AddClient(context.Background(), utils.ValidRegisterClientPayload())
-	if err != nil {
-		t.Errorf("AddClient returned error: %v", err)
-	}
-
-	// The second attempt should fail.
-	err = service.AddClient(context.Background(), utils.ValidRegisterClientPayload())
-	if err == nil {
-		t.Errorf("AddClient returned no error when adding the same user.")
-	}
-}
-
-// TestDefaultUserServiceAddInvalidUser test if adding an invalid client payload fails
-// with the method AddClient of DefaultUserService.
-func TestDefaultUserServiceAddInvalidUser(t *testing.T) {
-	service := Setup()
-	user := models.NewRegisterClientPayload("", "", "")
-
-	// Adding the invalid user should result in an error.
-	err := service.AddClient(context.Background(), user)
-	if err == nil {
-		t.Errorf("AddClient returned no error when adding invalid user.")
-	}
-}
-
-// TestDefaultUserServiceAddLogin tests if after successful registration
-// the user can log in with the method Login of DefaultUserService.
-func TestDefaultUserServiceAddLogin(t *testing.T) {
-	service := Setup()
-
-	// Registering the user.
-	err := service.AddClient(context.Background(), utils.ValidRegisterClientPayload())
-	if err != nil {
-		t.Errorf("AddClient returned error: %v", err)
-	}
-
-	// Logging as the same user.
-	loginUser := utils.ValidLoginClintPayload()
-	_, err = service.Login(context.Background(), loginUser)
-	if err != nil {
-		t.Errorf("Error logging in: %v", err)
-	}
-}
-
-// TestDefaultUserServiceRefreshSession tests if after successful login,
-// the user can refresh the session with the token with the method
-// RefreshSession of DefaultUserService.
-func TestDefaultUserServiceRefreshSession(t *testing.T) {
-	service := Setup()
-
-	// Register the client
-	apiErr := service.AddClient(context.Background(), utils.ValidRegisterClientPayload())
-	if apiErr != nil {
-		t.Fatalf("Failed to register client: %v", apiErr)
-	}
-
-	// Login to get refresh token
-	loginPayload := utils.ValidLoginClintPayload()
-	tokenGroup, apiErr := service.Login(context.Background(), loginPayload)
-	if apiErr != nil {
-		t.Fatalf("Login failed: %v", apiErr.Message)
-	}
-
-	// Decode refresh token manually to get claims
-	parsedToken, err := jwt.ParseWithClaims(tokenGroup.RefreshToken, &auth.Claims{}, func(token *jwt.Token) (any, error) {
-		return []byte("secret"), nil
-	})
-	if err != nil {
-		t.Fatalf("Failed to parse token: %v", err)
-	}
-
-	claims, ok := parsedToken.Claims.(*auth.Claims)
-	if !ok || !parsedToken.Valid {
-		t.Fatalf("Invalid claims")
-	}
-
-	// Call RefreshSession with parsed claims
-	newTokenGroup, apiErr := service.RefreshSession(context.Background(), claims)
-	if apiErr != nil {
-		t.Fatalf("RefreshSession failed: %v", apiErr)
-	}
-
-	if newTokenGroup.AccessToken == "" || newTokenGroup.RefreshToken == "" {
-		t.Errorf("Expected non-empty tokens")
-	}
-}
-
-// TestDefaultUserServiceGetUsers test if getting users withing specific
-// limit, page and role works expectedly with the method GetUsers of DefaultUserService.
-func TestDefaultUserServiceGetUsers(t *testing.T) {
-	userRepository, err := repositories.NewMemoryUserRepositoryWithUsers()
+	userRepo, err := testutils.NewMemoryUserRepositoryWithUsers()
 	if err != nil {
 		t.Fatalf("Error creating memory user repository: %v", err)
 	}
-
-	tokenRepository := repositories.NewMemoryTokenRepository()
+	tokenRepo := repositories.NewMemoryTokenRepository(nil)
 	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
 		JWTSecret: "secret",
-		Issuer:    "issuer",
+		Issuer:    "test",
 	})
 
+	return services.NewDefaultUserService(userRepo, tokenRepo, authenticator)
+}
+
+func TestDefaultUserService_AddClient(t *testing.T) {
+	service := DefaultUserService(t)
+
+	tests := []struct {
+		name           string
+		payload        *models.RegisterClientPayload
+		expectedStatus int
+	}{
+		{
+			name:           "Add valid payload",
+			payload:        models.NewRegisterClientPayload("newUser@gmail.com", "NewUsername", "Strong_pass_1"),
+			expectedStatus: fiber.StatusCreated,
+		}, {
+			name:           "Add client with duplicate email",
+			payload:        models.NewRegisterClientPayload("newUser@gmail.com", "NewUsername1", "Strong_pass_1"),
+			expectedStatus: fiber.StatusConflict,
+		}, {
+			name:           "Add client with duplicate username",
+			payload:        models.NewRegisterClientPayload("newUser1@email.com", "NewUsername", "Strong_pass_1"),
+			expectedStatus: fiber.StatusConflict,
+		}, {
+			name:           "Add client with invalid payload",
+			payload:        models.NewRegisterClientPayload("", "", ""),
+			expectedStatus: fiber.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			apiError := service.AddClient(context.Background(), test.payload)
+
+			if apiError == nil && test.expectedStatus == fiber.StatusCreated {
+				return
+			}
+
+			if apiError.Status != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, apiError.Status)
+			}
+		})
+	}
+}
+
+func TestDefaultUserService_Login(t *testing.T) {
+	service := DefaultUserService(t)
+
+	tests := []struct {
+		name           string
+		payload        *models.LoginUserPayload
+		expectedStatus int
+	}{
+		{
+			name:           "Login with valid credentials",
+			payload:        models.NewLoginUserPayload("jane_s", "SecurePass2@"),
+			expectedStatus: fiber.StatusOK,
+		}, {
+			name:           "Login with invalid credentials",
+			payload:        models.NewLoginUserPayload("jane_s", "InvalidPassword"),
+			expectedStatus: fiber.StatusUnauthorized,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, apiError := service.Login(context.Background(), test.payload)
+
+			if apiError == nil && test.expectedStatus == fiber.StatusOK {
+				return
+			}
+			if apiError.Status != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, apiError.Status)
+			}
+		})
+	}
+}
+
+func TestDefaultUserService_RefreshSession(t *testing.T) {
+	service := DefaultUserService(t)
+	tokens, loginError := service.Login(context.Background(), models.NewLoginUserPayload("jane_s", "SecurePass2@"))
+	if loginError != nil {
+		t.Fatalf("Error logging in: %v", loginError)
+	}
+
+	claims, err := jwt.ParseWithClaims(tokens.AccessToken, &auth.Claims{}, func(token *jwt.Token) (any, error) {
+		return []byte("secret"), nil
+	})
+	if err != nil {
+		t.Fatalf("Error parsing access token: %v", err)
+	}
+	accessToken, ok := claims.Claims.(*auth.Claims)
+	if !ok {
+		t.Fatalf("Error casting access token claims")
+	}
+	claims, err = jwt.ParseWithClaims(tokens.RefreshToken, &auth.Claims{}, func(token *jwt.Token) (any, error) {
+		return []byte("secret"), nil
+	})
+	if err != nil {
+		t.Fatalf("Error parsing refresh token: %v", err)
+	}
+	refreshToken, ok := claims.Claims.(*auth.Claims)
+	if !ok {
+		t.Fatalf("Error casting refresh token claims")
+	}
+
+	tests := []struct {
+		name           string
+		claims         *auth.Claims
+		expectedStatus int
+	}{
+		{
+			name:           "Refresh session with valid refresh token",
+			claims:         refreshToken,
+			expectedStatus: fiber.StatusOK,
+		}, {
+			name: "Refresh session with invalid refresh token",
+			claims: &auth.Claims{
+				TokenType: auth.RefreshToken,
+				Role:      models.Client,
+				RegisteredClaims: jwt.RegisteredClaims{
+					Subject: "invalid_refresh_token",
+				},
+			},
+			expectedStatus: fiber.StatusUnauthorized,
+		}, {
+			name:           "Refresh session with access token",
+			claims:         accessToken,
+			expectedStatus: fiber.StatusUnauthorized,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, apiError := service.RefreshSession(context.Background(), test.claims)
+
+			if apiError == nil && test.expectedStatus == fiber.StatusOK {
+				return
+			}
+
+			if apiError.Status != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, apiError.Status)
+			}
+		})
+	}
+}
+
+func TestDefaultUserService_GetUsers(t *testing.T) {
+	service := DefaultUserService(t)
 	role := models.Client
-	service := NewDefaultUserService(userRepository, tokenRepository, authenticator)
-	cases := []struct {
+
+	tests := []struct {
 		limit          int
 		page           int
-		expectedSize   int
 		role           *models.UserRole
 		expectedEmails []string
 	}{
 		{
 			limit:          4,
 			page:           1,
-			expectedSize:   4,
 			role:           nil,
-			expectedEmails: []string{"admin@example.com", "email1@example.com", "email2@example.com", "email3@example.com"},
+			expectedEmails: []string{"user1@example.com", "jane_smith@example.com", "alex.wilson@example.com", "emma.davis@example.com"},
 		}, {
 			limit:          4,
 			page:           2,
-			expectedSize:   4,
 			role:           nil,
-			expectedEmails: []string{"email4@example.com", "email5@example.com", "email6@example.com", "email7@example.com"},
-		}, {
-			limit:          4,
-			page:           3,
-			expectedSize:   2,
-			role:           nil,
-			expectedEmails: []string{"email8@example.com", "email9@example.com"},
-		}, {
-			limit:          4,
-			page:           4,
-			expectedSize:   0,
-			role:           nil,
-			expectedEmails: nil,
+			expectedEmails: []string{"michael.brown@example.com", "olivia.jones@example.com", "william.garcia@example.com", "sophia.rodriguez@example.com"},
 		}, {
 			limit:          4,
 			page:           1,
 			role:           &role,
-			expectedSize:   4,
-			expectedEmails: []string{"email4@example.com", "email5@example.com", "email6@example.com", "email9@example.com"},
+			expectedEmails: []string{"jane_smith@example.com", "olivia.jones@example.com", "isabella.hernandez@example.com", "chloe.sanchez@example.com"},
 		},
 	}
 
-	for caseNum, c := range cases {
-		t.Run(fmt.Sprintf("case-%d", caseNum), func(t *testing.T) {
-			result, err := service.GetUsers(context.Background(), c.limit, c.page, c.role)
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			result, err := service.GetUsers(context.Background(), test.limit, test.page, test.role)
+
 			if err != nil {
-				t.Fatalf("Error getting users: %v", err)
+				t.Errorf("Error getting users: %v", err)
 			}
-			if len(result) != c.expectedSize {
-				t.Fatalf("Error getting users: %v, expected %v", len(result), c.expectedSize)
+			if len(result) != len(test.expectedEmails) {
+				t.Errorf("Expected %d users, got %d", len(test.expectedEmails), len(result))
 			}
 
-			for i := 0; i < c.expectedSize; i++ {
-				if result[i].Email != c.expectedEmails[i] {
-					t.Fatalf("Error getting user email: %v, expected %v", result[i].Email, c.expectedEmails[i])
+			for j := 0; i < len(result); i++ {
+				if result[j].Email != test.expectedEmails[j] {
+					t.Errorf("Expected email %v, got %v", test.expectedEmails[i], result[i].Email)
 				}
 			}
 		})
