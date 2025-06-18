@@ -71,7 +71,7 @@ func memoryTokenRepository(t *testing.T) *repositories.MemoryTokenRepository {
 // seedUserDatabase will add users to the test database.
 func seedUserDatabase(t *testing.T) {
 	t.Helper()
-	err := testutils.SeedUsersTable(userPostgresRepository)
+	err := testutils.SeedUsersTable(db)
 	if err != nil {
 		t.Fatalf("Error seeding database: %v", err)
 	}
@@ -90,7 +90,7 @@ func cleanupUserDatabase() {
 // Note: The users must be added first, or the token adding will fail.
 func seedTokenDatabase(t *testing.T) {
 	t.Helper()
-	err := testutils.SeedTokensTable(tokenPostgresRepository)
+	err := testutils.SeedTokensTable(db)
 	if err != nil {
 		t.Fatalf("Error seeding database: %v", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"api/auth"
 	"api/models"
 	"api/repositories"
-	"context"
 	"database/sql"
 	_ "embed"
 	"encoding/json"
@@ -49,16 +48,24 @@ func NewMemoryUserRepositoryWithUsers() (*repositories.MemoryUserRepository, err
 }
 
 // SeedUsersTable seeds users table with users loaded from testdata/users.json.
-func SeedUsersTable(repository *repositories.PostgresUserRepository) error {
+func SeedUsersTable(db *sql.DB) error {
 	users, err := getUsers()
 	if err != nil {
 		return err
 	}
 
 	for _, user := range users {
-		repoErr := repository.AddUser(context.Background(), user)
-		if repoErr != nil {
-			return repoErr
+		_, dbErr := db.Exec(
+			`INSERT INTO users (id, email, username, password, user_role)
+					VALUES ($1, $2, $3, $4, $5)`,
+			user.Id,
+			user.Email,
+			user.Username,
+			user.Password,
+			user.Role,
+		)
+		if dbErr != nil {
+			return dbErr
 		}
 	}
 
@@ -88,16 +95,21 @@ func NewMemoryTokenRepositoryWithTokens() (*repositories.MemoryTokenRepository, 
 }
 
 // SeedTokensTable seeds tokens table with tokens loaded from testdata/tokens.json.
-func SeedTokensTable(repository *repositories.PostgresTokenRepository) error {
+func SeedTokensTable(db *sql.DB) error {
 	tokens, err := getTokens()
 	if err != nil {
 		return err
 	}
 
 	for _, token := range tokens {
-		repoErr := repository.AddToken(context.Background(), token)
-		if repoErr != nil {
-			return repoErr
+		_, dbErr := db.Exec(
+			`INSERT INTO tokens(id, user_id, exp) VALUES ($1, $2, $3)`,
+			token.Id,
+			token.UserId,
+			token.ExpiresAt,
+		)
+		if dbErr != nil {
+			return dbErr
 		}
 	}
 	return nil
