@@ -128,8 +128,8 @@ func (h *DefaultUserHandler) GetUsers() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid limit", fiber.StatusBadGateway))
 		}
 
-		if parsedLimit > 100 {
-			parsedLimit = 100
+		if parsedLimit < 1 || parsedLimit > 50 {
+			parsedLimit = 50
 		}
 
 		page := c.Query("page")
