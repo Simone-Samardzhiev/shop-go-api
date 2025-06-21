@@ -40,6 +40,9 @@ type UserService interface {
 	//
 	// Support pagination with limit and page plus filtering by role that is optional.
 	GetUsers(ctx context.Context, limit, page int, role *string) ([]*models.UserInfo, *utils.APIError)
+
+	// GetUsersById used to get specific user information by admins.
+	GetUsersById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError)
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -162,6 +165,17 @@ func (s *DefaultUserService) GetUsers(ctx context.Context, limit, page int, role
 		return nil, utils.InternalServerAPIError()
 	}
 	return results, nil
+}
+
+func (s *DefaultUserService) GetUsersById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError) {
+	result, err := s.userRepository.GetUserById(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	} else if err != nil {
+		return nil, utils.InternalServerAPIError()
+	} else {
+		return result, nil
+	}
 }
 
 // NewDefaultUserService return new instance of UserService.

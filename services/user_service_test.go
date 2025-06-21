@@ -7,10 +7,13 @@ import (
 	"api/repositories"
 	"api/services"
 	"api/testutils"
+	"api/utils"
 	"context"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"reflect"
 	"testing"
 )
 
@@ -217,6 +220,43 @@ func TestDefaultUserService_GetUsers(t *testing.T) {
 				if result[j].Email != test.expectedEmails[j] {
 					t.Errorf("Expected email %v, got %v", test.expectedEmails[i], result[i].Email)
 				}
+			}
+		})
+	}
+}
+
+func TestDefaultUserService_GetUserByID(t *testing.T) {
+	service := DefaultUserService(t)
+
+	tests := []struct {
+		id            uuid.UUID
+		expectedEmail string
+	}{
+		{
+			id:            uuid.MustParse("d0e1f2a3-b4c5-6789-0123-def90123abcd"),
+			expectedEmail: "isabella.hernandez@example.com",
+		}, {
+			id:            uuid.MustParse("c9d0e1f2-a3b4-5678-9012-cdef89012abc"),
+			expectedEmail: "james.martinez@example.com",
+		}, {
+			id:            uuid.New(),
+			expectedEmail: "",
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			result, err := service.GetUsersById(context.Background(), test.id)
+
+			if test.expectedEmail == "" && !reflect.DeepEqual(err, utils.NewAPIError("User not found.", fiber.StatusNotFound)) {
+				t.Errorf("Expected error %v, got %v", *utils.NewAPIError("User not found.", fiber.StatusNotFound), err)
+				return
+			} else if test.expectedEmail == "" && reflect.DeepEqual(err, utils.NewAPIError("User not found.", fiber.StatusNotFound)) {
+				return
+			}
+
+			if result.Email != test.expectedEmail {
+				t.Errorf("Expected email %v, got %v", test.expectedEmail, result.Email)
 			}
 		})
 	}
