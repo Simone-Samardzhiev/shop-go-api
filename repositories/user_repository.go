@@ -92,6 +92,10 @@ func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*
 	result := make([]*models.UserInfo, 0, limit)
 	offset := (page - 1) * limit
 	end := offset + limit
+	if offset >= len(r.users) {
+		return result, nil
+	}
+
 	if end > len(r.users) {
 		end = len(r.users)
 	}
@@ -125,6 +129,10 @@ func (r *MemoryUserRepository) GetUsersByRole(_ context.Context, limit, page int
 	}
 
 	offset := (page - 1) * limit
+	if offset >= len(filtered) {
+		return make([]*models.UserInfo, 0), nil
+	}
+
 	end := offset + limit
 	if end > len(filtered) {
 		end = len(filtered)
