@@ -6,6 +6,7 @@ import (
 	"api/services"
 	"api/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"strconv"
 )
 
@@ -26,6 +27,9 @@ type UserHandler interface {
 
 	// GetUsers returns handler used by admins to see users' information.
 	GetUsers() fiber.Handler
+
+	// GetUserById returns handler to see
+	GetUserById() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -159,6 +163,31 @@ func (h *DefaultUserHandler) GetUsers() fiber.Handler {
 
 		return c.Status(fiber.StatusOK).JSON(result)
 	}
+}
+
+func (h *DefaultUserHandler) GetUserById() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		id, err := uuid.Parse(c.Params("id"))
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid id", fiber.StatusBadRequest))
+		}
+
+		result, apiError := h.service.GetUsersById(c.Context(), id)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(result)
+	}
+
 }
 
 // NewDefaultUserHandler return new instance of DefaultUserHandler.

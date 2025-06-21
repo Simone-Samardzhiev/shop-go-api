@@ -60,6 +60,7 @@ func (a *api) start() error {
 	userGroup.Post("/register/admin", a.Handlers.UserHandler.RegisterUser())
 	userGroup.Get("/refresh", a.Handlers.UserHandler.RefreshSession())
 	userGroup.Get("/usersData", a.Handlers.UserHandler.GetUsers())
+	userGroup.Get("/userData/:id", a.Handlers.UserHandler.GetUserById())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }

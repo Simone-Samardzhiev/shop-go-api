@@ -618,3 +618,106 @@ func FuzzDefaultUserHandler_GetUsers(f *testing.F) {
 		}
 	})
 }
+
+func TestDefaultUserHandler_GetUserById(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/:id", Middleware(), handler.GetUserById())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	tests := []struct {
+		userId         string
+		expectedStatus int
+		expectedEmail  string
+	}{
+		{
+			userId:         "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+			expectedStatus: fiber.StatusOK,
+			expectedEmail:  "user1@example.com",
+		}, {
+			userId:         "b2c3d4e5-f6a7-8901-2345-67890abcdef1",
+			expectedStatus: fiber.StatusOK,
+			expectedEmail:  "jane_smith@example.com",
+		}, {
+			userId:         uuid.New().String(),
+			expectedStatus: fiber.StatusNotFound,
+			expectedEmail:  "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.userId, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/users/"+test.userId, "GET", tokens.AccessToken, nil)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Fatalf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+
+			var user models.UserInfo
+			decoderErr := json.NewDecoder(res.Body).Decode(&user)
+			if decoderErr != nil {
+				t.Fatalf("Error decoding response: %v", decoderErr)
+			}
+			if user.Email != test.expectedEmail {
+				t.Errorf("Expected email %s, got %s", test.expectedEmail, user.Email)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_GetUserById(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/:id", Middleware(), handler.GetUserById())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	for b.Loop() {
+		_, requestErr := testutils.SendRequest(app, "/users/a1b2c3d4-e5f6-7890-1234-567890abcdef", "GET", tokens.AccessToken, nil)
+		if requestErr != nil {
+			b.Errorf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_GetUserById(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/:id", Middleware(), handler.GetUserById())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add(uuid.New().String())
+	f.Add(uuid.New().String())
+	f.Add("")
+
+	f.Fuzz(func(t *testing.T, userId string) {
+		userId = testutils.FilterPathValue(userId)
+
+		_, requestErr := testutils.SendRequest(app, "/users/"+userId, "GET", tokens.AccessToken, nil)
+		if requestErr != nil {
+			t.Errorf("Error sending request: %v", requestErr)
+		}
+	})
+}
