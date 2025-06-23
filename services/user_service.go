@@ -41,8 +41,11 @@ type UserService interface {
 	// Support pagination with limit and page plus filtering by role that is optional.
 	GetUsers(ctx context.Context, limit, page int, role *string) ([]*models.UserInfo, *utils.APIError)
 
-	// GetUsersById used to get specific user information by admins.
-	GetUsersById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError)
+	// GetUserById used to get specific user information by admins.
+	GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError)
+
+	// UpdateUser used to update user data by specific id.
+	UpdateUser(ctx context.Context, user *models.User) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -167,7 +170,7 @@ func (s *DefaultUserService) GetUsers(ctx context.Context, limit, page int, role
 	return results, nil
 }
 
-func (s *DefaultUserService) GetUsersById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError) {
+func (s *DefaultUserService) GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError) {
 	result, err := s.userRepository.GetUserById(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
@@ -176,6 +179,29 @@ func (s *DefaultUserService) GetUsersById(ctx context.Context, id uuid.UUID) (*m
 	} else {
 		return result, nil
 	}
+}
+
+func (s *DefaultUserService) UpdateUser(ctx context.Context, user *models.User) *utils.APIError {
+	if err := user.Validate(); err != nil {
+		return utils.NewAPIErrorFromError(err, fiber.StatusBadRequest)
+	}
+
+	result, err := s.userRepository.CheckEmailAndUsername(ctx, user.Email, user.Username)
+	if err != nil {
+		return utils.NewAPIErrorFromError(err, fiber.StatusInternalServerError)
+	}
+	if result {
+		return utils.NewAPIError("User email or username already exist.", fiber.StatusConflict)
+	}
+
+	result, err = s.userRepository.UpdateUser(ctx, user)
+	if err != nil {
+		return utils.InternalServerAPIError()
+	}
+	if !result {
+		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	}
+	return nil
 }
 
 // NewDefaultUserService return new instance of UserService.

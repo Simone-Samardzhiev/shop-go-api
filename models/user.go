@@ -105,11 +105,32 @@ var RolesMap = map[UserRole]bool{
 
 // User holds registered used data.
 type User struct {
-	Id       uuid.UUID
-	Email    string
-	Username string
-	Password string
-	Role     UserRole
+	Id       uuid.UUID `json:"id"`
+	Email    string    `json:"email"`
+	Username string    `json:"username"`
+	Password string    `json:"password"`
+	Role     UserRole  `json:"role"`
+}
+
+// Validate validate will check if the user attributes are valid.
+func (u *User) Validate() error {
+	if ok := validate.Email(u.Email); !ok {
+		return errors.New("invalid email")
+	}
+
+	if ok := validate.Password(u.Password); !ok {
+		return errors.New("invalid password")
+	}
+
+	if ok := validate.Username(u.Username); !ok {
+		return errors.New("invalid username")
+	}
+
+	if !RolesMap[u.Role] {
+		return errors.New("invalid user role")
+	}
+
+	return nil
 }
 
 // NewUser create new instance of User.

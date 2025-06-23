@@ -28,8 +28,11 @@ type UserHandler interface {
 	// GetUsers returns handler used by admins to see users' information.
 	GetUsers() fiber.Handler
 
-	// GetUserById returns handler to see
+	// GetUserById returns handler used by admins to see specific user information.
 	GetUserById() fiber.Handler
+
+	// UpdateUser returns handler used by admins to update user data.
+	UpdateUser() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -180,14 +183,39 @@ func (h *DefaultUserHandler) GetUserById() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid id", fiber.StatusBadRequest))
 		}
 
-		result, apiError := h.service.GetUsersById(c.Context(), id)
+		result, apiError := h.service.GetUserById(c.Context(), id)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
 
 		return c.Status(fiber.StatusOK).JSON(result)
 	}
+}
 
+func (h *DefaultUserHandler) UpdateUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		var payload models.User
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		apiErr := h.service.UpdateUser(c.Context(), &payload)
+		if apiErr != nil {
+			return c.Status(apiErr.Status).JSON(apiErr)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
 }
 
 // NewDefaultUserHandler return new instance of DefaultUserHandler.

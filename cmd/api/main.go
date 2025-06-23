@@ -59,8 +59,9 @@ func (a *api) start() error {
 	userGroup.Use(middleware)
 	userGroup.Post("/register/admin", a.Handlers.UserHandler.RegisterUser())
 	userGroup.Get("/refresh", a.Handlers.UserHandler.RefreshSession())
-	userGroup.Get("/usersData", a.Handlers.UserHandler.GetUsers())
-	userGroup.Get("/userData/:id", a.Handlers.UserHandler.GetUserById())
+	userGroup.Get("/usersInfo", a.Handlers.UserHandler.GetUsers())
+	userGroup.Get("/userInfo/:id", a.Handlers.UserHandler.GetUserById())
+	userGroup.Patch("/updateUser", a.Handlers.UserHandler.UpdateUser())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }

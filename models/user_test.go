@@ -2,11 +2,12 @@ package models
 
 import (
 	"errors"
+	"fmt"
+	"github.com/google/uuid"
 	"testing"
 )
 
-// TestRegisterClientPayloadValidate tests validation of different payloads.
-func TestRegisterClientPayloadValidate(t *testing.T) {
+func TestRegisterClientPayload_Validate(t *testing.T) {
 	tests := []struct {
 		Name     string
 		Payload  RegisterClientPayload
@@ -70,8 +71,7 @@ func TestRegisterClientPayloadValidate(t *testing.T) {
 	}
 }
 
-// BenchmarkRegisterClientPayloadValidate benchmarks the validation of a RegisterClientPayload.
-func BenchmarkRegisterClientPayloadValidate(b *testing.B) {
+func BenchmarkRegisterClientPayload_Validate(b *testing.B) {
 	payload := NewRegisterClientPayload("validemail@gmail.com", "validUsername", "ValidPassword_123")
 
 	for i := 0; i < b.N; i++ {
@@ -79,8 +79,7 @@ func BenchmarkRegisterClientPayloadValidate(b *testing.B) {
 	}
 }
 
-// TestRegisterUserPayloadValidate tests validation of different payloads.
-func TestRegisterUserPayloadValidate(t *testing.T) {
+func TestRegisterUserPayload_Validate(t *testing.T) {
 	tests := []struct {
 		Name     string
 		Payload  RegisterUserPayload
@@ -148,8 +147,44 @@ func TestRegisterUserPayloadValidate(t *testing.T) {
 	}
 }
 
-// BenchmarkRegisterUserPayloadValidate benchmarks the validation of a RegisterUserPayload.
-func BenchmarkRegisterUserPayloadValidate(b *testing.B) {
+func TestUser_Validate(t *testing.T) {
+	tests := []struct {
+		user     *User
+		expected error
+	}{
+		{
+			user:     NewUser(uuid.New(), "example@email.com", "ValidUsername", "Strong_pass123", Client),
+			expected: nil,
+		}, {
+			user:     NewUser(uuid.New(), "", "ValidUsername", "Strong_pass123", Client),
+			expected: errors.New("invalid email"),
+		}, {
+			user:     NewUser(uuid.New(), "example@email.com", "", "Strong_pass123", Client),
+			expected: errors.New("invalid username"),
+		}, {
+			user:     NewUser(uuid.New(), "example@email.com", "ValidUsername", "", Client),
+			expected: errors.New("invalid password"),
+		}, {
+			user:     NewUser(uuid.New(), "example@email.com", "ValidUsername", "Strong_pass123", ""),
+			expected: errors.New("invalid user role"),
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			err := test.user.Validate()
+			if test.expected == nil && err != nil {
+				t.Errorf("Expected no error, got %v", err)
+			} else if test.expected != nil && err == nil {
+				t.Errorf("Expected error, got nil")
+			} else if test.expected != nil && err != nil && err.Error() != test.expected.Error() {
+				t.Errorf("Expected error %v, got %v", test.expected, err)
+			}
+		})
+	}
+}
+
+func BenchmarkRegisterUserPayload_Validate(b *testing.B) {
 	payload := NewRegisterUserPayload("validemail@gmail.com", "validUsername", "ValidPassword_123", Client)
 
 	for i := 0; i < b.N; i++ {

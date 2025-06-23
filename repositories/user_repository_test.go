@@ -267,6 +267,39 @@ func TestMemoryUserRepository_GetUserByID(t *testing.T) {
 	}
 }
 
+func TestMemoryUserRepository_UpdateUser(t *testing.T) {
+	repo := memoryUserRepository(t)
+
+	tests := []struct {
+		name     string
+		user     *models.User
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "newEmail", "newUsername", "newPassword", models.Client),
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			user:     models.NewUser(uuid.New(), "newEmail", "newUsername", "newPassword", models.Client),
+			expected: false,
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			result, err := repo.UpdateUser(context.Background(), test.user)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
 func TestPostgresUserRepository_AddUser(t *testing.T) {
 	seedUserDatabase(t)
 	t.Cleanup(cleanupUserDatabase)
@@ -524,6 +557,40 @@ func TestPostgresUserRepository_GetUserByID(t *testing.T) {
 
 			if result.Email != test.expectedEmail {
 				t.Errorf("Expected email %v, got %v", test.expectedEmail, result.Email)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_UpdateUser(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
+
+	tests := []struct {
+		name     string
+		user     *models.User
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "newEmail", "newUsername", "newPassword", models.Client),
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			user:     models.NewUser(uuid.New(), "newEmail", "newUsername", "newPassword", models.Client),
+			expected: false,
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			result, err := userPostgresRepository.UpdateUser(context.Background(), test.user)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
 			}
 		})
 	}

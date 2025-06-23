@@ -246,7 +246,7 @@ func TestDefaultUserService_GetUserByID(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
-			result, err := service.GetUsersById(context.Background(), test.id)
+			result, err := service.GetUserById(context.Background(), test.id)
 
 			if test.expectedEmail == "" && !reflect.DeepEqual(err, utils.NewAPIError("User not found.", fiber.StatusNotFound)) {
 				t.Errorf("Expected error %v, got %v", *utils.NewAPIError("User not found.", fiber.StatusNotFound), err)
@@ -257,6 +257,44 @@ func TestDefaultUserService_GetUserByID(t *testing.T) {
 
 			if result.Email != test.expectedEmail {
 				t.Errorf("Expected email %v, got %v", test.expectedEmail, result.Email)
+			}
+		})
+	}
+}
+
+func TestDefaultUserService_UpdateUser(t *testing.T) {
+	service := DefaultUserService(t)
+
+	tests := []struct {
+		user     *models.User
+		expected *utils.APIError
+	}{
+		{
+			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "exmple_email@email.com", "NewUsername", "NewStrong_123", models.Client),
+			expected: nil,
+		}, {
+			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "jane_smith@example.com", "NewUsername", "NewStrong_123", models.Client),
+			expected: utils.NewAPIError("User email or username already exist.", fiber.StatusConflict),
+		}, {
+			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "", "NewUsername", "NewPassword_123", models.Client),
+			expected: utils.NewAPIError("Invalid email.", fiber.StatusBadRequest),
+		}, {
+			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "", "NewPassword_123", models.Client),
+			expected: utils.NewAPIError("Invalid username.", fiber.StatusBadRequest),
+		}, {
+			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "NewUsername", "", models.Client),
+			expected: utils.NewAPIError("Invalid password.", fiber.StatusBadRequest),
+		}, {
+			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "NewUsername", "NewPassword_123", ""),
+			expected: utils.NewAPIError("Invalid user role.", fiber.StatusBadRequest),
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			apiError := service.UpdateUser(context.Background(), test.user)
+			if !reflect.DeepEqual(apiError, test.expected) {
+				t.Errorf("Expected error %v, got %v", test.expected, apiError)
 			}
 		})
 	}

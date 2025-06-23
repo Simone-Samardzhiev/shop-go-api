@@ -42,6 +42,11 @@ type UserRepository interface {
 	//
 	// Returns an error if a user with the specified id doesn't exist or there was a database error.
 	GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, error)
+
+	// UpdateUser updates user data.
+	//
+	// Return true if the user was found and updated.
+	UpdateUser(ctx context.Context, user *models.User) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -148,6 +153,16 @@ func (r *MemoryUserRepository) GetUserById(_ context.Context, id uuid.UUID) (*mo
 		}
 	}
 	return nil, sql.ErrNoRows
+}
+
+func (r *MemoryUserRepository) UpdateUser(_ context.Context, user *models.User) (bool, error) {
+	for i, u := range r.users {
+		if u.Id == user.Id {
+			r.users[i] = user
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // PostgresUserRepository implements UserRepository using postgres.
@@ -284,6 +299,30 @@ func (r *PostgresUserRepository) GetUserById(ctx context.Context, id uuid.UUID) 
 	var user models.UserInfo
 	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Role)
 	return &user, err
+}
+
+func (r *PostgresUserRepository) UpdateUser(ctx context.Context, user *models.User) (bool, error) {
+	result, err := r.db.ExecContext(
+		ctx,
+		`UPDATE users 
+		SET email = $1, username = $2, password = $3, user_role = $4 
+		WHERE id = $5`,
+		user.Email,
+		user.Username,
+		user.Password,
+		user.Role,
+		user.Id,
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
 }
 
 // NewPostgresUserRepository creates a new instance of PostgresUserRepository

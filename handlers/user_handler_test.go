@@ -721,3 +721,58 @@ func FuzzDefaultUserHandler_GetUserById(f *testing.F) {
 		}
 	})
 }
+
+func TestDefaultUserHandler_UpdateUser(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/update", Middleware(), handler.UpdateUser())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		payload        *models.User
+		expectedStatus int
+	}{
+		{
+			name:           "Successful update",
+			payload:        models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "NewEmail1@gmail.com", "NewUsername1", "NewPassword_123", models.Client),
+			expectedStatus: http.StatusOK,
+		}, {
+			name:           "Unsuccessful update/User not found",
+			payload:        models.NewUser(uuid.New(), "NewEmail2@gmail.com", "NewUsername2", "NewPassword_123", models.Client),
+			expectedStatus: http.StatusNotFound,
+		}, {
+			name:           "Unsuccessful update/User payload in not valid",
+			payload:        models.NewUser(uuid.New(), "", "", "", ""),
+			expectedStatus: http.StatusBadRequest,
+		}, {
+			name:           "Unsuccessful update/User email already exists",
+			payload:        models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "alex.wilson@example.com", "NewUsername3", "NewPassword_123", models.Client),
+			expectedStatus: http.StatusConflict,
+		}, {
+			name:           "Unsuccessful update/User username already exists",
+			payload:        models.NewUser(uuid.MustParse("e5f6a7b8-c9d0-1234-5678-90abcdef4567"), "NewEmail3@gmail.com", "john_doe", "NewPassword_123", models.Client),
+			expectedStatus: http.StatusConflict,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/users/update", "PATCH", tokens.AccessToken, test.payload)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+
+			if test.expectedStatus != res.StatusCode {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
