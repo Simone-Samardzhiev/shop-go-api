@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Error loading .env.test file")
 	}
 
-	connectionStr := os.Getenv("DATABASE_URL")
+	connectionStr := os.Getenv("TEST_DATABASE_URL")
 	if connectionStr == "" {
 		log.Fatalf("DATABASE_URL is not set")
 	}

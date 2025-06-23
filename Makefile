@@ -1,4 +1,5 @@
 include .env
+include .env.test
 
 MIGRATIONS_PATH=./migrations
 
