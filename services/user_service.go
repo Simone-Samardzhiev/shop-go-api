@@ -10,6 +10,7 @@ import (
 	"errors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -60,19 +61,20 @@ func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.Regi
 		return utils.NewAPIErrorFromError(err, fiber.StatusBadRequest)
 	}
 
-	result, err := s.userRepository.CheckEmailAndUsername(ctx, payload.Email, payload.Username)
-	if result {
-		return utils.NewAPIError("User already exists", fiber.StatusConflict)
-	}
-
 	hash, err := auth.HashPassword(payload.Password)
 	if err != nil {
-		return utils.InternalServerAPIError()
+		return utils.InternalServerAPIError(err)
 	}
 
 	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, models.Client)
 	if err = s.userRepository.AddUser(ctx, user); err != nil {
-		return utils.InternalServerAPIError()
+		var pqErr *pq.Error
+		ok := errors.As(err, &pqErr)
+		if ok && pqErr.Code == "23505" {
+			return utils.NewAPIError("User email or password are already in use.", fiber.StatusConflict)
+		} else if !ok && err != nil {
+			return utils.InternalServerAPIError(err)
+		}
 	}
 
 	return nil
@@ -83,19 +85,20 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 		return utils.NewAPIErrorFromError(err, fiber.StatusBadRequest)
 	}
 
-	result, err := s.userRepository.CheckEmailAndUsername(ctx, payload.Email, payload.Username)
-	if result {
-		return utils.NewAPIError("User already exists.", fiber.StatusConflict)
-	}
-
 	hash, err := auth.HashPassword(payload.Password)
 	if err != nil {
-		return utils.InternalServerAPIError()
+		return utils.InternalServerAPIError(err)
 	}
 
 	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, payload.UserRole)
 	if err = s.userRepository.AddUser(ctx, user); err != nil {
-		return utils.InternalServerAPIError()
+		var pqErr *pq.Error
+		ok := errors.As(err, &pqErr)
+		if ok && pqErr.Code == "23505" {
+			return utils.NewAPIError("User email or password are already in use.", fiber.StatusConflict)
+		} else if !ok && err != nil {
+			return utils.InternalServerAPIError(err)
+		}
 	}
 
 	return nil
@@ -104,16 +107,16 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 func (s *DefaultUserService) createTokenGroup(ctx context.Context, sub uuid.UUID, role models.UserRole) (*models.TokenGroup, *utils.APIError) {
 	token := models.NewToken(uuid.New(), sub, time.Now().Add(time.Hour*24*20))
 	if err := s.tokenRepository.AddToken(ctx, token); err != nil {
-		return nil, utils.InternalServerAPIError()
+		return nil, utils.InternalServerAPIError(err)
 	}
 
 	accessToken, err := s.authenticator.CreateToken(sub, uuid.New(), role, auth.AccessToken, time.Now().Add(time.Minute*20))
 	if err != nil {
-		return nil, utils.InternalServerAPIError()
+		return nil, utils.InternalServerAPIError(err)
 	}
 	refreshToken, err := s.authenticator.CreateToken(sub, token.Id, role, auth.RefreshToken, time.Now().Add(time.Hour*24*20))
 	if err != nil {
-		return nil, utils.InternalServerAPIError()
+		return nil, utils.InternalServerAPIError(err)
 	}
 
 	return models.NewTokenGroup(refreshToken, accessToken), nil
@@ -125,7 +128,7 @@ func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUse
 	case errors.Is(err, sql.ErrNoRows):
 		return nil, utils.NewAPIError("Wrong credentials.", fiber.StatusUnauthorized)
 	case err != nil:
-		return nil, utils.InternalServerAPIError()
+		return nil, utils.InternalServerAPIError(err)
 	}
 
 	if !auth.VerifyPassword(payload.Password, fetchedUser.Password) {
@@ -142,7 +145,7 @@ func (s *DefaultUserService) RefreshSession(ctx context.Context, claims *auth.Cl
 	}
 	result, err := s.tokenRepository.DeleteToken(ctx, id)
 	if err != nil {
-		return nil, utils.InternalServerAPIError()
+		return nil, utils.InternalServerAPIError(err)
 	}
 	if !result {
 		return nil, utils.NewAPIError("Invalid token.", fiber.StatusUnauthorized)
@@ -165,7 +168,7 @@ func (s *DefaultUserService) GetUsers(ctx context.Context, limit, page int, role
 	}
 
 	if err != nil {
-		return nil, utils.InternalServerAPIError()
+		return nil, utils.InternalServerAPIError(err)
 	}
 	return results, nil
 }
@@ -175,7 +178,7 @@ func (s *DefaultUserService) GetUserById(ctx context.Context, id uuid.UUID) (*mo
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
 	} else if err != nil {
-		return nil, utils.InternalServerAPIError()
+		return nil, utils.InternalServerAPIError(err)
 	} else {
 		return result, nil
 	}
@@ -186,21 +189,18 @@ func (s *DefaultUserService) UpdateUser(ctx context.Context, user *models.User) 
 		return utils.NewAPIErrorFromError(err, fiber.StatusBadRequest)
 	}
 
-	result, err := s.userRepository.CheckEmailAndUsername(ctx, user.Email, user.Username)
-	if err != nil {
-		return utils.NewAPIErrorFromError(err, fiber.StatusInternalServerError)
-	}
-	if result {
-		return utils.NewAPIError("User email or username already exist.", fiber.StatusConflict)
-	}
-
-	result, err = s.userRepository.UpdateUser(ctx, user)
-	if err != nil {
-		return utils.InternalServerAPIError()
+	result, err := s.userRepository.UpdateUser(ctx, user)
+	var pqErr *pq.Error
+	ok := errors.As(err, &pqErr)
+	if ok && pqErr.Code == "23505" {
+		return utils.NewAPIError("User email or username already in use.", fiber.StatusConflict)
+	} else if !ok && err != nil {
+		return utils.InternalServerAPIError(err)
 	}
 	if !result {
 		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
 	}
+
 	return nil
 }
 

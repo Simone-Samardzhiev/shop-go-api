@@ -15,11 +15,6 @@ type UserRepository interface {
 	// Returns an error if the user could not be added (e.g., duplicate entry or database error).
 	AddUser(ctx context.Context, user *models.User) error
 
-	// CheckEmailAndUsername checks if the email or the username are in use.
-	//
-	// Return true if they are in use or a database error.
-	CheckEmailAndUsername(ctx context.Context, email string, username string) (bool, error)
-
 	// GetUserByUsername gets a user by specified username.
 	//
 	// Returns an error if a user with the specified username doesn't exist or there was a database error.
@@ -47,6 +42,12 @@ type UserRepository interface {
 	//
 	// Return true if the user was found and updated.
 	UpdateUser(ctx context.Context, user *models.User) (bool, error)
+
+	// DeleteUser delete a user with a specific id.
+	//
+	// Returns true if the user was deleted or false if the user was not found.
+	// Retune error if there was a database error.
+	DeleteUser(ctx context.Context, id uuid.UUID) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -73,15 +74,6 @@ func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) err
 
 	r.users = append(r.users, user)
 	return nil
-}
-
-func (r *MemoryUserRepository) CheckEmailAndUsername(_ context.Context, email string, username string) (bool, error) {
-	for _, u := range r.users {
-		if u.Email == email || u.Username == username {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (r *MemoryUserRepository) GetUserByUsername(_ context.Context, username string) (*models.User, error) {
@@ -165,6 +157,17 @@ func (r *MemoryUserRepository) UpdateUser(_ context.Context, user *models.User) 
 	return false, nil
 }
 
+func (r *MemoryUserRepository) DeleteUser(_ context.Context, id uuid.UUID) (bool, error) {
+	for i, u := range r.users {
+		if u.Id == id {
+			r.users = append(r.users[:i], r.users[i+1:]...)
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // PostgresUserRepository implements UserRepository using postgres.
 type PostgresUserRepository struct {
 	db *sql.DB
@@ -183,18 +186,6 @@ func (r *PostgresUserRepository) AddUser(ctx context.Context, user *models.User)
 	)
 
 	return err
-}
-
-func (r *PostgresUserRepository) CheckEmailAndUsername(ctx context.Context, email string, username string) (bool, error) {
-	row := r.db.QueryRowContext(
-		ctx,
-		`SELECT EXISTS( SELECT 1 FROM users WHERE email = $1 OR username = $2)`,
-		email,
-		username,
-	)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
 }
 
 func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
@@ -318,6 +309,18 @@ func (r *PostgresUserRepository) UpdateUser(ctx context.Context, user *models.Us
 		return false, err
 	}
 
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return rows > 0, nil
+}
+
+func (r *PostgresUserRepository) DeleteUser(ctx context.Context, id uuid.UUID) (bool, error) {
+	result, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
+	if err != nil {
+		return false, err
+	}
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return false, err
