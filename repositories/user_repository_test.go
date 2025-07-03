@@ -254,6 +254,38 @@ func TestMemoryUserRepository_UpdateUser(t *testing.T) {
 	}
 }
 
+func TestMemoryUserRepository_DeleteUser(t *testing.T) {
+	repo := memoryUserRepository(t)
+
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		expected bool
+	}{
+		{
+			name:     "Delete existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: true,
+		}, {
+			name:     "Delete non-existing user",
+			id:       uuid.New(),
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := repo.DeleteUser(context.Background(), test.id)
+			if err != nil {
+				t.Fatalf("Error deleting user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
 func TestPostgresUserRepository_AddUser(t *testing.T) {
 	seedUserDatabase(t)
 	t.Cleanup(cleanupUserDatabase)
@@ -496,6 +528,39 @@ func TestPostgresUserRepository_UpdateUser(t *testing.T) {
 				t.Fatalf("Error updating user: %v", err)
 			}
 
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_DeleteUser(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
+
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		expected bool
+	}{
+		{
+			name:     "Delete existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: true,
+		}, {
+			name:     "Delete non-existing user",
+			id:       uuid.New(),
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := userPostgresRepository.DeleteUser(context.Background(), test.id)
+			if err != nil {
+				t.Fatalf("Error deleting user: %v", err)
+			}
 			if result != test.expected {
 				t.Errorf("Expected %t, got %t", test.expected, result)
 			}

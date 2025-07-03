@@ -4,8 +4,8 @@ import (
 	"api/models"
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // UserRepository defines methods used to modify user data.
@@ -68,7 +68,9 @@ func NewMemoryUserRepository(user []*models.User) *MemoryUserRepository {
 func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) error {
 	for _, u := range r.users {
 		if u.Email == user.Email || u.Username == user.Username {
-			return errors.New("user email or password already exists")
+			return &pq.Error{
+				Code: "23505",
+			}
 		}
 	}
 
@@ -149,7 +151,11 @@ func (r *MemoryUserRepository) GetUserById(_ context.Context, id uuid.UUID) (*mo
 
 func (r *MemoryUserRepository) UpdateUser(_ context.Context, user *models.User) (bool, error) {
 	for i, u := range r.users {
-		if u.Id == user.Id {
+		if (u.Email == user.Email || u.Username == user.Username) && u.Id != user.Id {
+			return false, &pq.Error{
+				Code: "23505",
+			}
+		} else if u.Id == user.Id {
 			r.users[i] = user
 			return true, nil
 		}
