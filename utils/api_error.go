@@ -27,8 +27,8 @@ func NewAPIErrorFromError(err error, status int) *APIError {
 }
 
 // InternalServerAPIError is the standard way of return a server error.
-func InternalServerAPIError(err error) *APIError {
-	return NewAPIErrorFromError(err, fiber.StatusInternalServerError)
+func InternalServerAPIError() *APIError {
+	return NewAPIError("Internal server error.", fiber.StatusInternalServerError)
 }
 
 // InvalidTokenAPIError is the standard way of return an invalid token error.
