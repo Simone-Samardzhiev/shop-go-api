@@ -63,7 +63,7 @@ func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.Regi
 
 	hash, err := auth.HashPassword(payload.Password)
 	if err != nil {
-		return utils.InternalServerAPIError(err)
+		return utils.InternalServerAPIError()
 	}
 
 	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, models.Client)
@@ -73,7 +73,7 @@ func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.Regi
 		if ok && pqErr.Code == "23505" {
 			return utils.NewAPIError("User email or password are already in use.", fiber.StatusConflict)
 		} else if !ok && err != nil {
-			return utils.InternalServerAPIError(err)
+			return utils.InternalServerAPIError()
 		}
 	}
 
@@ -87,7 +87,7 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 
 	hash, err := auth.HashPassword(payload.Password)
 	if err != nil {
-		return utils.InternalServerAPIError(err)
+		return utils.InternalServerAPIError()
 	}
 
 	user := models.NewUser(uuid.New(), payload.Email, payload.Username, hash, payload.UserRole)
@@ -97,7 +97,7 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 		if ok && pqErr.Code == "23505" {
 			return utils.NewAPIError("User email or password are already in use.", fiber.StatusConflict)
 		} else if !ok && err != nil {
-			return utils.InternalServerAPIError(err)
+			return utils.InternalServerAPIError()
 		}
 	}
 
@@ -107,16 +107,16 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 func (s *DefaultUserService) createTokenGroup(ctx context.Context, sub uuid.UUID, role models.UserRole) (*models.TokenGroup, *utils.APIError) {
 	token := models.NewToken(uuid.New(), sub, time.Now().Add(time.Hour*24*20))
 	if err := s.tokenRepository.AddToken(ctx, token); err != nil {
-		return nil, utils.InternalServerAPIError(err)
+		return nil, utils.InternalServerAPIError()
 	}
 
 	accessToken, err := s.authenticator.CreateToken(sub, uuid.New(), role, auth.AccessToken, time.Now().Add(time.Minute*20))
 	if err != nil {
-		return nil, utils.InternalServerAPIError(err)
+		return nil, utils.InternalServerAPIError()
 	}
 	refreshToken, err := s.authenticator.CreateToken(sub, token.Id, role, auth.RefreshToken, time.Now().Add(time.Hour*24*20))
 	if err != nil {
-		return nil, utils.InternalServerAPIError(err)
+		return nil, utils.InternalServerAPIError()
 	}
 
 	return models.NewTokenGroup(refreshToken, accessToken), nil
@@ -128,7 +128,7 @@ func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUse
 	case errors.Is(err, sql.ErrNoRows):
 		return nil, utils.NewAPIError("Wrong credentials.", fiber.StatusUnauthorized)
 	case err != nil:
-		return nil, utils.InternalServerAPIError(err)
+		return nil, utils.InternalServerAPIError()
 	}
 
 	if !auth.VerifyPassword(payload.Password, fetchedUser.Password) {
@@ -145,7 +145,7 @@ func (s *DefaultUserService) RefreshSession(ctx context.Context, claims *auth.Cl
 	}
 	result, err := s.tokenRepository.DeleteToken(ctx, id)
 	if err != nil {
-		return nil, utils.InternalServerAPIError(err)
+		return nil, utils.InternalServerAPIError()
 	}
 	if !result {
 		return nil, utils.NewAPIError("Invalid token.", fiber.StatusUnauthorized)
@@ -168,7 +168,7 @@ func (s *DefaultUserService) GetUsers(ctx context.Context, limit, page int, role
 	}
 
 	if err != nil {
-		return nil, utils.InternalServerAPIError(err)
+		return nil, utils.InternalServerAPIError()
 	}
 	return results, nil
 }
@@ -178,7 +178,7 @@ func (s *DefaultUserService) GetUserById(ctx context.Context, id uuid.UUID) (*mo
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
 	} else if err != nil {
-		return nil, utils.InternalServerAPIError(err)
+		return nil, utils.InternalServerAPIError()
 	} else {
 		return result, nil
 	}
@@ -195,7 +195,7 @@ func (s *DefaultUserService) UpdateUser(ctx context.Context, user *models.User) 
 	if ok && pqErr.Code == "23505" {
 		return utils.NewAPIError("User email or username already in use.", fiber.StatusConflict)
 	} else if !ok && err != nil {
-		return utils.InternalServerAPIError(err)
+		return utils.InternalServerAPIError()
 	}
 	if !result {
 		return utils.NewAPIError("User not found.", fiber.StatusNotFound)

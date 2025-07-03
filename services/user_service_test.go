@@ -66,6 +66,8 @@ func TestDefaultUserService_AddClient(t *testing.T) {
 
 			if apiError == nil && test.expectedStatus == fiber.StatusCreated {
 				return
+			} else if apiError == nil {
+				t.Fatalf("Expected an error got nil")
 			}
 
 			if apiError.Status != test.expectedStatus {
@@ -273,8 +275,8 @@ func TestDefaultUserService_UpdateUser(t *testing.T) {
 			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "exmple_email@email.com", "NewUsername", "NewStrong_123", models.Client),
 			expected: nil,
 		}, {
-			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "jane_smith@example.com", "NewUsername", "NewStrong_123", models.Client),
-			expected: utils.NewAPIError("User email or username already exist.", fiber.StatusConflict),
+			user:     models.NewUser(uuid.MustParse("c3d4e5f6-a7b8-9012-3456-7890abcdef23"), "exmple_email@email.com", "NewUsername", "NewStrong_123", models.Client),
+			expected: utils.NewAPIError("User email or username already in use.", fiber.StatusConflict),
 		}, {
 			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "", "NewUsername", "NewPassword_123", models.Client),
 			expected: utils.NewAPIError("Invalid email.", fiber.StatusBadRequest),
