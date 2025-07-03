@@ -9,6 +9,7 @@ import (
 	"api/services"
 	"api/testutils"
 	"api/utils"
+	"bytes"
 	"encoding/json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -754,7 +755,7 @@ func TestDefaultUserHandler_UpdateUser(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		}, {
 			name:           "Unsuccessful update/User email already exists",
-			payload:        models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "alex.wilson@example.com", "NewUsername3", "NewPassword_123", models.Client),
+			payload:        models.NewUser(uuid.MustParse("d4e5f6a7-b8c9-0123-4567-890abcdef345"), "alex.wilson@example.com", "NewUsername3", "NewPassword_123", models.Client),
 			expectedStatus: http.StatusConflict,
 		}, {
 			name:           "Unsuccessful update/User username already exists",
@@ -775,4 +776,56 @@ func TestDefaultUserHandler_UpdateUser(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkUserHandler_UpdateUser(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/update", Middleware(), handler.UpdateUser())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	for b.Loop() {
+		res, requestErr := testutils.SendRequest(app, "/users/update", "PATCH", tokens.AccessToken, models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "NewEmail1@gmail.com", "NewUsername1", "NewPassword_123", models.Client))
+		if requestErr != nil {
+			b.Fatalf("Error sending request: %v", requestErr)
+		}
+		if res.StatusCode != fiber.StatusOK {
+			b.Fatalf("Expected status %d, got %d", fiber.StatusOK, res.StatusCode)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_UpdateUser(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/update", Middleware(), handler.UpdateUser())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add(tokens.AccessToken, []byte{}, "email", "username", "password", "client")
+	f.Add("", []byte{}, "", "", "", "")
+	f.Fuzz(func(t *testing.T, token string, userId []byte, email, username, password, role string) {
+		token = testutils.FilterToken(token)
+		if userId == nil || len(userId) != 16 {
+			userId = bytes.Repeat([]byte{0}, 16)
+		}
+
+		_, requestErr := testutils.SendRequest(app, "/users/update", "PATCH", token, models.NewUser(uuid.UUID(userId), email, username, password, role))
+		if requestErr != nil {
+			t.Errorf("Error sending request: %v", requestErr)
+		}
+	})
 }
