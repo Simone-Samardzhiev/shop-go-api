@@ -33,6 +33,9 @@ type UserHandler interface {
 
 	// UpdateUser returns handler used by admins to update user data.
 	UpdateUser() fiber.Handler
+
+	// DeleteUser returns handle used by admins to delete user data.
+	DeleteUser() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -211,6 +214,32 @@ func (h *DefaultUserHandler) UpdateUser() fiber.Handler {
 		apiErr := h.service.UpdateUser(c.Context(), &payload)
 		if apiErr != nil {
 			return c.Status(apiErr.Status).JSON(apiErr)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) DeleteUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		stringId := c.Params("id")
+		id, err := uuid.Parse(stringId)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid id", fiber.StatusBadRequest))
+		}
+
+		apiError := h.service.DeleteUser(c.Context(), id)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
 		}
 
 		c.Status(fiber.StatusOK)

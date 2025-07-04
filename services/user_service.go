@@ -43,10 +43,19 @@ type UserService interface {
 	GetUsers(ctx context.Context, limit, page int, role *string) ([]*models.UserInfo, *utils.APIError)
 
 	// GetUserById used to get specific user information by admins.
+	//
+	// Return the models.UserInfo if the user was found or utils.APIError if any error occurs.
 	GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError)
 
 	// UpdateUser used to update user data by specific id.
+	//
+	// Return utils.APIError if the user was not found, or any error occurs.
 	UpdateUser(ctx context.Context, user *models.User) *utils.APIError
+
+	// DeleteUser used to delete user by a specific id.
+	//
+	// Return utils.APIError if the user was not found, or any error occurs.
+	DeleteUser(ctx context.Context, id uuid.UUID) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -195,6 +204,18 @@ func (s *DefaultUserService) UpdateUser(ctx context.Context, user *models.User) 
 	if ok && pqErr.Code == "23505" {
 		return utils.NewAPIError("User email or username already in use.", fiber.StatusConflict)
 	} else if !ok && err != nil {
+		return utils.InternalServerAPIError()
+	}
+	if !result {
+		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	}
+
+	return nil
+}
+
+func (s *DefaultUserService) DeleteUser(ctx context.Context, id uuid.UUID) *utils.APIError {
+	result, err := s.userRepository.DeleteUser(ctx, id)
+	if err != nil {
 		return utils.InternalServerAPIError()
 	}
 	if !result {

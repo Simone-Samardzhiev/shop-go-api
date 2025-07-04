@@ -301,3 +301,33 @@ func TestDefaultUserService_UpdateUser(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultUserService_DeleteUser(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name           string
+		id             uuid.UUID
+		expectedToFail bool
+	}{
+		{
+			name:           "Delete a user with existing id",
+			id:             uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expectedToFail: false,
+		}, {
+			name:           "Delete a user with non-existing id",
+			id:             uuid.New(),
+			expectedToFail: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			apiError := service.DeleteUser(context.Background(), test.id)
+			if test.expectedToFail && apiError == nil {
+				t.Errorf("Expected error, got nil")
+			} else if !test.expectedToFail && apiError != nil {
+				t.Errorf("Expected no error, got %v", apiError)
+			}
+		})
+	}
+}
