@@ -205,7 +205,7 @@ func (h *DefaultUserHandler) UpdateUser() fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
 		}
 
-		var payload models.User
+		var payload models.UpdateUserPayload
 		err := c.BodyParser(&payload)
 		if err != nil {
 			return err

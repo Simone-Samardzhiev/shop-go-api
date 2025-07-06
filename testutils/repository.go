@@ -56,13 +56,14 @@ func SeedUsersTable(db *sql.DB) error {
 
 	for _, user := range users {
 		_, dbErr := db.Exec(
-			`INSERT INTO users (id, email, username, password, user_role)
-					VALUES ($1, $2, $3, $4, $5)`,
+			`INSERT INTO users (id, email, username, password, user_role, active)
+					VALUES ($1, $2, $3, $4, $5, $6)`,
 			user.Id,
 			user.Email,
 			user.Username,
 			user.Password,
 			user.Role,
+			user.Active,
 		)
 		if dbErr != nil {
 			return dbErr

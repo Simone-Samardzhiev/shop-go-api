@@ -4,6 +4,7 @@ import (
 	"api/models"
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -41,13 +42,19 @@ type UserRepository interface {
 	// UpdateUser updates user data.
 	//
 	// Return true if the user was found and updated.
-	UpdateUser(ctx context.Context, user *models.User) (bool, error)
+	UpdateUser(ctx context.Context, user *models.UpdateUserPayload) (bool, error)
 
-	// DeleteUser delete a user with a specific id.
+	// DeleteUser deletes a user with a specific id.
 	//
 	// Returns true if the user was deleted or false if the user was not found.
 	// Retune error if there was a database error.
 	DeleteUser(ctx context.Context, id uuid.UUID) (bool, error)
+
+	// CheckIfUserIsActive checks if a user with a specific id is active.
+	//
+	// Return true if the user is active.
+	// Return error if there was a database error.
+	CheckIfUserIsActive(ctx context.Context, id uuid.UUID) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -149,18 +156,32 @@ func (r *MemoryUserRepository) GetUserById(_ context.Context, id uuid.UUID) (*mo
 	return nil, sql.ErrNoRows
 }
 
-func (r *MemoryUserRepository) UpdateUser(_ context.Context, user *models.User) (bool, error) {
+func (r *MemoryUserRepository) UpdateUser(_ context.Context, user *models.UpdateUserPayload) (bool, error) {
+	indexToUpdate := -1
 	for i, u := range r.users {
-		if (u.Email == user.Email || u.Username == user.Username) && u.Id != user.Id {
+		if u.Id == user.Id {
+			indexToUpdate = i
+			break
+		}
+	}
+
+	if indexToUpdate == -1 {
+		return false, nil
+	}
+
+	for i, u := range r.users {
+		if (u.Email == user.Email || u.Username == user.Username) && indexToUpdate != i {
 			return false, &pq.Error{
 				Code: "23505",
 			}
-		} else if u.Id == user.Id {
-			r.users[i] = user
-			return true, nil
 		}
 	}
-	return false, nil
+
+	r.users[indexToUpdate].Email = user.Email
+	r.users[indexToUpdate].Username = user.Username
+	r.users[indexToUpdate].Role = user.Role
+	r.users[indexToUpdate].Active = user.Active
+	return true, nil
 }
 
 func (r *MemoryUserRepository) DeleteUser(_ context.Context, id uuid.UUID) (bool, error) {
@@ -168,6 +189,16 @@ func (r *MemoryUserRepository) DeleteUser(_ context.Context, id uuid.UUID) (bool
 		if u.Id == id {
 			r.users = append(r.users[:i], r.users[i+1:]...)
 			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (r *MemoryUserRepository) CheckIfUserIsActive(_ context.Context, id uuid.UUID) (bool, error) {
+	for _, u := range r.users {
+		if u.Id == id {
+			return u.Active, nil
 		}
 	}
 
@@ -298,16 +329,16 @@ func (r *PostgresUserRepository) GetUserById(ctx context.Context, id uuid.UUID) 
 	return &user, err
 }
 
-func (r *PostgresUserRepository) UpdateUser(ctx context.Context, user *models.User) (bool, error) {
+func (r *PostgresUserRepository) UpdateUser(ctx context.Context, user *models.UpdateUserPayload) (bool, error) {
 	result, err := r.db.ExecContext(
 		ctx,
 		`UPDATE users 
-		SET email = $1, username = $2, password = $3, user_role = $4 
+		SET email = $1, username = $2, user_role = $3, active = $4
 		WHERE id = $5`,
 		user.Email,
 		user.Username,
-		user.Password,
 		user.Role,
+		user.Active,
 		user.Id,
 	)
 
@@ -332,6 +363,24 @@ func (r *PostgresUserRepository) DeleteUser(ctx context.Context, id uuid.UUID) (
 		return false, err
 	}
 	return rows > 0, nil
+}
+
+func (r *PostgresUserRepository) CheckIfUserIsActive(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := r.db.QueryRowContext(
+		ctx,
+		`SELECT active
+		FROM users
+		WHERE id = $1`,
+		id,
+	)
+
+	var active bool
+	err := row.Scan(&active)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+
+	return active, err
 }
 
 // NewPostgresUserRepository creates a new instance of PostgresUserRepository

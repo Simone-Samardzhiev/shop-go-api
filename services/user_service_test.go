@@ -87,12 +87,16 @@ func TestDefaultUserService_Login(t *testing.T) {
 	}{
 		{
 			name:           "Login with valid credentials",
-			payload:        models.NewLoginUserPayload("jane_s", "SecurePass2@"),
+			payload:        models.NewLoginUserPayload("john_doe", "Password1!"),
 			expectedStatus: fiber.StatusOK,
 		}, {
 			name:           "Login with invalid credentials",
-			payload:        models.NewLoginUserPayload("jane_s", "InvalidPassword"),
+			payload:        models.NewLoginUserPayload("john_doe", "Passworddqwe1!"),
 			expectedStatus: fiber.StatusUnauthorized,
+		}, {
+			name:           "Login with inactive user",
+			payload:        models.NewLoginUserPayload("jane_s", "SecurePass2@"),
+			expectedStatus: fiber.StatusForbidden,
 		},
 	}
 
@@ -112,7 +116,7 @@ func TestDefaultUserService_Login(t *testing.T) {
 
 func TestDefaultUserService_RefreshSession(t *testing.T) {
 	service := DefaultUserService(t)
-	tokens, loginError := service.Login(context.Background(), models.NewLoginUserPayload("jane_s", "SecurePass2@"))
+	tokens, loginError := service.Login(context.Background(), models.NewLoginUserPayload("john_doe", "Password1!"))
 	if loginError != nil {
 		t.Fatalf("Error logging in: %v", loginError)
 	}
@@ -268,26 +272,23 @@ func TestDefaultUserService_UpdateUser(t *testing.T) {
 	service := DefaultUserService(t)
 
 	tests := []struct {
-		user     *models.User
+		user     *models.UpdateUserPayload
 		expected *utils.APIError
 	}{
 		{
-			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "exmple_email@email.com", "NewUsername", "NewStrong_123", models.Client),
+			user:     models.NewUpdateUserPayload(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "exmple_email@email.com", "NewUsername", true, models.Client),
 			expected: nil,
 		}, {
-			user:     models.NewUser(uuid.MustParse("c3d4e5f6-a7b8-9012-3456-7890abcdef23"), "exmple_email@email.com", "NewUsername", "NewStrong_123", models.Client),
+			user:     models.NewUpdateUserPayload(uuid.MustParse("c3d4e5f6-a7b8-9012-3456-7890abcdef23"), "exmple_email@email.com", "NewUsername", false, models.Client),
 			expected: utils.NewAPIError("User email or username already in use.", fiber.StatusConflict),
 		}, {
-			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "", "NewUsername", "NewPassword_123", models.Client),
+			user:     models.NewUpdateUserPayload(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "", "NewUsername", false, models.Client),
 			expected: utils.NewAPIError("Invalid email.", fiber.StatusBadRequest),
 		}, {
-			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "", "NewPassword_123", models.Client),
+			user:     models.NewUpdateUserPayload(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "", true, models.Client),
 			expected: utils.NewAPIError("Invalid username.", fiber.StatusBadRequest),
 		}, {
-			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "NewUsername", "", models.Client),
-			expected: utils.NewAPIError("Invalid password.", fiber.StatusBadRequest),
-		}, {
-			user:     models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "NewUsername", "NewPassword_123", ""),
+			user:     models.NewUpdateUserPayload(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "NewUsername", true, ""),
 			expected: utils.NewAPIError("Invalid user role.", fiber.StatusBadRequest),
 		},
 	}

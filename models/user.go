@@ -109,28 +109,8 @@ type User struct {
 	Email    string    `json:"email"`
 	Username string    `json:"username"`
 	Password string    `json:"password"`
+	Active   bool      `json:"active"`
 	Role     UserRole  `json:"role"`
-}
-
-// Validate validate will check if the user attributes are valid.
-func (u *User) Validate() error {
-	if ok := validate.Email(u.Email); !ok {
-		return errors.New("invalid email")
-	}
-
-	if ok := validate.Password(u.Password); !ok {
-		return errors.New("invalid password")
-	}
-
-	if ok := validate.Username(u.Username); !ok {
-		return errors.New("invalid username")
-	}
-
-	if !RolesMap[u.Role] {
-		return errors.New("invalid user role")
-	}
-
-	return nil
 }
 
 // NewUser create new instance of User.
@@ -159,6 +139,42 @@ func NewUserInfo(id uuid.UUID, email, username string, role UserRole) *UserInfo 
 		Id:       id,
 		Email:    email,
 		Username: username,
+		Role:     role,
+	}
+}
+
+// UpdateUserPayload used by admins to update user data.
+type UpdateUserPayload struct {
+	Id       uuid.UUID `json:"id"`
+	Email    string    `json:"email"`
+	Username string    `json:"username"`
+	Active   bool      `json:"active"`
+	Role     UserRole  `json:"role"`
+}
+
+func (payload *UpdateUserPayload) Validate() error {
+	if ok := validate.Email(payload.Email); !ok {
+		return errors.New("invalid email")
+	}
+
+	if ok := validate.Username(payload.Username); !ok {
+		return errors.New("invalid username")
+	}
+
+	if ok := RolesMap[payload.Role]; !ok {
+		return errors.New("invalid user role")
+	}
+
+	return nil
+}
+
+// NewUpdateUserPayload returns a new instance of UpdateUserPayload.
+func NewUpdateUserPayload(id uuid.UUID, email string, username string, active bool, role UserRole) *UpdateUserPayload {
+	return &UpdateUserPayload{
+		Id:       id,
+		Email:    email,
+		Username: username,
+		Active:   active,
 		Role:     role,
 	}
 }

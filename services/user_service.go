@@ -50,9 +50,9 @@ type UserService interface {
 	// UpdateUser used to update user data by specific id.
 	//
 	// Return utils.APIError if the user was not found, or any error occurs.
-	UpdateUser(ctx context.Context, user *models.User) *utils.APIError
+	UpdateUser(ctx context.Context, user *models.UpdateUserPayload) *utils.APIError
 
-	// DeleteUser used to delete user by a specific id.
+	// DeleteUser used to delete a user by a specific id.
 	//
 	// Return utils.APIError if the user was not found, or any error occurs.
 	DeleteUser(ctx context.Context, id uuid.UUID) *utils.APIError
@@ -144,6 +144,10 @@ func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUse
 		return nil, utils.NewAPIError("Wrong credentials.", fiber.StatusUnauthorized)
 	}
 
+	if !fetchedUser.Active {
+		return nil, utils.NewAPIError("User is not active.", fiber.StatusForbidden)
+	}
+
 	return s.createTokenGroup(ctx, fetchedUser.Id, fetchedUser.Role)
 }
 
@@ -164,6 +168,16 @@ func (s *DefaultUserService) RefreshSession(ctx context.Context, claims *auth.Cl
 	if err != nil {
 		return nil, utils.NewAPIError("Invalid token subject.", fiber.StatusUnauthorized)
 	}
+
+	isActive, err := s.userRepository.CheckIfUserIsActive(ctx, sub)
+	if err != nil {
+		return nil, utils.InternalServerAPIError()
+	}
+
+	if !isActive {
+		return nil, utils.NewAPIError("User is not active.", fiber.StatusForbidden)
+	}
+
 	return s.createTokenGroup(ctx, sub, claims.Role)
 }
 
@@ -193,7 +207,7 @@ func (s *DefaultUserService) GetUserById(ctx context.Context, id uuid.UUID) (*mo
 	}
 }
 
-func (s *DefaultUserService) UpdateUser(ctx context.Context, user *models.User) *utils.APIError {
+func (s *DefaultUserService) UpdateUser(ctx context.Context, user *models.UpdateUserPayload) *utils.APIError {
 	if err := user.Validate(); err != nil {
 		return utils.NewAPIErrorFromError(err, fiber.StatusBadRequest)
 	}

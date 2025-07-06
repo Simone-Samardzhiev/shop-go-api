@@ -279,8 +279,8 @@ func TestDefaultUserHandler_Login(t *testing.T) {
 			payload:        models.NewLoginUserPayload("john_doe", "Password1!"),
 			expectedStatus: fiber.StatusOK,
 		}, {
-			name:           "Login with invalid client credentials",
-			payload:        models.NewLoginUserPayload("jane_s", "SecurePass2@"),
+			name:           "Login with valid client credentials",
+			payload:        models.NewLoginUserPayload("gracier", "SuperPass18)"),
 			expectedStatus: fiber.StatusOK,
 		}, {
 			name:           "Login with valid delivery credentials",
@@ -288,12 +288,16 @@ func TestDefaultUserHandler_Login(t *testing.T) {
 			expectedStatus: fiber.StatusOK,
 		}, {
 			name:           "Login with valid workshop credentials",
-			payload:        models.NewLoginUserPayload("emmad", "Password4$"),
+			payload:        models.NewLoginUserPayload("lilyd", "LastPass20@"),
 			expectedStatus: fiber.StatusOK,
 		}, {
 			name:           "Login with invalid credentials",
 			payload:        models.NewLoginUserPayload("", ""),
 			expectedStatus: fiber.StatusUnauthorized,
+		}, {
+			name:           "Login to deactivated account",
+			payload:        models.NewLoginUserPayload("jane_s", "SecurePass2@"),
+			expectedStatus: fiber.StatusForbidden,
 		},
 	}
 
@@ -738,28 +742,28 @@ func TestDefaultUserHandler_UpdateUser(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		payload        *models.User
+		payload        *models.UpdateUserPayload
 		expectedStatus int
 	}{
 		{
 			name:           "Successful update",
-			payload:        models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "NewEmail1@gmail.com", "NewUsername1", "NewPassword_123", models.Client),
+			payload:        models.NewUpdateUserPayload(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "NewEmail1@gmail.com", "NewUsername1", false, models.Client),
 			expectedStatus: http.StatusOK,
 		}, {
 			name:           "Unsuccessful update/User not found",
-			payload:        models.NewUser(uuid.New(), "NewEmail2@gmail.com", "NewUsername2", "NewPassword_123", models.Client),
+			payload:        models.NewUpdateUserPayload(uuid.New(), "NewEmail2@gmail.com", "NewUsername2", false, models.Client),
 			expectedStatus: http.StatusNotFound,
 		}, {
 			name:           "Unsuccessful update/User payload in not valid",
-			payload:        models.NewUser(uuid.New(), "", "", "", ""),
+			payload:        models.NewUpdateUserPayload(uuid.New(), "", "", true, ""),
 			expectedStatus: http.StatusBadRequest,
 		}, {
 			name:           "Unsuccessful update/User email already exists",
-			payload:        models.NewUser(uuid.MustParse("d4e5f6a7-b8c9-0123-4567-890abcdef345"), "alex.wilson@example.com", "NewUsername3", "NewPassword_123", models.Client),
+			payload:        models.NewUpdateUserPayload(uuid.MustParse("d4e5f6a7-b8c9-0123-4567-890abcdef345"), "alex.wilson@example.com", "NewUsername3", true, models.Client),
 			expectedStatus: http.StatusConflict,
 		}, {
 			name:           "Unsuccessful update/User username already exists",
-			payload:        models.NewUser(uuid.MustParse("e5f6a7b8-c9d0-1234-5678-90abcdef4567"), "NewEmail3@gmail.com", "john_doe", "NewPassword_123", models.Client),
+			payload:        models.NewUpdateUserPayload(uuid.MustParse("e5f6a7b8-c9d0-1234-5678-90abcdef4567"), "NewEmail3@gmail.com", "john_doe", true, models.Client),
 			expectedStatus: http.StatusConflict,
 		},
 	}
@@ -792,7 +796,7 @@ func BenchmarkUserHandler_UpdateUser(b *testing.B) {
 	}
 
 	for b.Loop() {
-		res, requestErr := testutils.SendRequest(app, "/users/update", "PATCH", tokens.AccessToken, models.NewUser(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "NewEmail1@gmail.com", "NewUsername1", "NewPassword_123", models.Client))
+		res, requestErr := testutils.SendRequest(app, "/users/update", "PATCH", tokens.AccessToken, models.NewUpdateUserPayload(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "NewEmail1@gmail.com", "NewUsername1", true, models.Client))
 		if requestErr != nil {
 			b.Fatalf("Error sending request: %v", requestErr)
 		}
@@ -815,15 +819,15 @@ func FuzzDefaultUserHandler_UpdateUser(f *testing.F) {
 		f.Fatalf("Error logging in as admin: %v", err)
 	}
 
-	f.Add(tokens.AccessToken, []byte{}, "email", "username", "password", "client")
-	f.Add("", []byte{}, "", "", "", "")
-	f.Fuzz(func(t *testing.T, token string, userId []byte, email, username, password, role string) {
+	f.Add(tokens.AccessToken, []byte{}, "email", "username", true, "client")
+	f.Add("", []byte{}, "", "", false, "")
+	f.Fuzz(func(t *testing.T, token string, userId []byte, email, username string, active bool, role string) {
 		token = testutils.FilterToken(token)
 		if userId == nil || len(userId) != 16 {
 			userId = bytes.Repeat([]byte{0}, 16)
 		}
 
-		_, requestErr := testutils.SendRequest(app, "/users/update", "PATCH", token, models.NewUser(uuid.UUID(userId), email, username, password, role))
+		_, requestErr := testutils.SendRequest(app, "/users/update", "PATCH", token, models.NewUpdateUserPayload(uuid.UUID(userId), email, username, active, role))
 		if requestErr != nil {
 			t.Errorf("Error sending request: %v", requestErr)
 		}

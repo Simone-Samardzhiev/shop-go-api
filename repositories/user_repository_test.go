@@ -226,16 +226,16 @@ func TestMemoryUserRepository_UpdateUser(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		user     *models.User
+		user     *models.UpdateUserPayload
 		expected bool
 	}{
 		{
 			name:     "Update existing user",
-			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "newEmail", "newUsername", "newPassword", models.Client),
+			user:     models.NewUpdateUserPayload(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "newEmail", "newUsername", false, models.Client),
 			expected: true,
 		}, {
 			name:     "Update non-existing user",
-			user:     models.NewUser(uuid.New(), "newEmail", "newUsername", "newPassword", models.Client),
+			user:     models.NewUpdateUserPayload(uuid.New(), "newEmail", "newUsername", true, models.Client),
 			expected: false,
 		},
 	}
@@ -278,6 +278,37 @@ func TestMemoryUserRepository_DeleteUser(t *testing.T) {
 			result, err := repo.DeleteUser(context.Background(), test.id)
 			if err != nil {
 				t.Fatalf("Error deleting user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestMemoryUserRepository_CheckIfUserIsActive(t *testing.T) {
+	repo := memoryUserRepository(t)
+	tests := []struct {
+		id       uuid.UUID
+		expected bool
+	}{
+		{
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: true,
+		}, {
+			id:       uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"),
+			expected: false,
+		}, {
+			id:       uuid.New(),
+			expected: false,
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%d-test", i), func(t *testing.T) {
+			result, err := repo.CheckIfUserIsActive(context.Background(), test.id)
+			if err != nil {
+				t.Fatalf("Error checking if user is active: %v", err)
 			}
 			if result != test.expected {
 				t.Errorf("Expected %t, got %t", test.expected, result)
@@ -507,16 +538,16 @@ func TestPostgresUserRepository_UpdateUser(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		user     *models.User
+		user     *models.UpdateUserPayload
 		expected bool
 	}{
 		{
 			name:     "Update existing user",
-			user:     models.NewUser(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "newEmail", "newUsername", "newPassword", models.Client),
+			user:     models.NewUpdateUserPayload(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "newEmail", "newUsername", false, models.Client),
 			expected: true,
 		}, {
 			name:     "Update non-existing user",
-			user:     models.NewUser(uuid.New(), "newEmail", "newUsername", "newPassword", models.Client),
+			user:     models.NewUpdateUserPayload(uuid.New(), "newEmail", "newUsername", true, models.Client),
 			expected: false,
 		},
 	}
@@ -560,6 +591,39 @@ func TestPostgresUserRepository_DeleteUser(t *testing.T) {
 			result, err := userPostgresRepository.DeleteUser(context.Background(), test.id)
 			if err != nil {
 				t.Fatalf("Error deleting user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_CheckIfUserIsActive(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
+
+	tests := []struct {
+		id       uuid.UUID
+		expected bool
+	}{
+		{
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: true,
+		}, {
+			id:       uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"),
+			expected: false,
+		}, {
+			id:       uuid.New(),
+			expected: false,
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%d-test", i), func(t *testing.T) {
+			result, err := userPostgresRepository.CheckIfUserIsActive(context.Background(), test.id)
+			if err != nil {
+				t.Fatalf("Error checking if user is active: %v", err)
 			}
 			if result != test.expected {
 				t.Errorf("Expected %t, got %t", test.expected, result)
