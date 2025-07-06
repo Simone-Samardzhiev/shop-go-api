@@ -75,6 +75,38 @@ func TestMemoryTokenRepository_DeleteToken(t *testing.T) {
 	}
 }
 
+func TestMemoryTokenRepository_DeleteTokenByUserId(t *testing.T) {
+	repo := memoryTokenRepository(t)
+
+	tests := []struct {
+		name     string
+		userId   uuid.UUID
+		expected bool
+	}{
+		{
+			name:     "Existing user id",
+			userId:   uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: true,
+		}, {
+			name:     "Non-existing user id",
+			userId:   uuid.New(),
+			expected: false,
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			result, err := repo.DeleteTokenByUserId(context.Background(), test.userId)
+			if err != nil {
+				t.Fatalf("Error deleting token: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
 func TestPostgresTokenRepository_AddToken(t *testing.T) {
 	seedUserDatabase(t)
 	seedTokenDatabase(t)
@@ -139,6 +171,41 @@ func TestPostgresTokenRepository_DeleteToken(t *testing.T) {
 
 			if err != nil {
 				t.Errorf("Error deleting token: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestPostgresTokenRepository_DeleteTokenByUserId(t *testing.T) {
+	seedUserDatabase(t)
+	seedTokenDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
+	t.Cleanup(cleanupTokenDatabase)
+
+	tests := []struct {
+		name     string
+		userId   uuid.UUID
+		expected bool
+	}{
+		{
+			name:     "Existing user id",
+			userId:   uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: true,
+		}, {
+			name:     "Non-existing user id",
+			userId:   uuid.New(),
+			expected: false,
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			result, err := tokenPostgresRepository.DeleteTokenByUserId(context.Background(), test.userId)
+			if err != nil {
+				t.Fatalf("Error deleting token: %v", err)
 			}
 			if result != test.expected {
 				t.Errorf("Expected %t, got %t", test.expected, result)

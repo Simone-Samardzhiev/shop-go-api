@@ -44,18 +44,23 @@ type UserService interface {
 
 	// GetUserById used to get specific user information by admins.
 	//
-	// Return the models.UserInfo if the user was found or utils.APIError if any error occurs.
+	// Return the models.UserInfo if the user was found or utils.APIError if any error occurred.
 	GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError)
 
 	// UpdateUser used to update user data by specific id.
 	//
-	// Return utils.APIError if the user was not found, or any error occurs.
+	// Return utils.APIError if the user was not found, or if any error occurred.
 	UpdateUser(ctx context.Context, user *models.UpdateUserPayload) *utils.APIError
 
 	// DeleteUser used to delete a user by a specific id.
 	//
-	// Return utils.APIError if the user was not found, or any error occurs.
+	// Return utils.APIError if the user was not found, or if any error occurred.
 	DeleteUser(ctx context.Context, id uuid.UUID) *utils.APIError
+
+	// ForceLogoutUser removes all refresh tokens that are linked to a specific user.
+	//
+	// Returns utils.APIError if the none tokens are found, or if any error occurred.
+	ForceLogoutUser(ctx context.Context, id uuid.UUID) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -234,6 +239,18 @@ func (s *DefaultUserService) DeleteUser(ctx context.Context, id uuid.UUID) *util
 	}
 	if !result {
 		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	}
+
+	return nil
+}
+
+func (s *DefaultUserService) ForceLogoutUser(ctx context.Context, id uuid.UUID) *utils.APIError {
+	result, err := s.tokenRepository.DeleteTokenByUserId(ctx, id)
+	if err != nil {
+		return utils.InternalServerAPIError()
+	}
+	if !result {
+		return utils.NewAPIError("No tokens founds linked to user.", fiber.StatusNotFound)
 	}
 
 	return nil

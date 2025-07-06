@@ -4,7 +4,6 @@ import (
 	"api/auth"
 	"api/config"
 	"api/models"
-	"api/repositories"
 	"api/services"
 	"api/testutils"
 	"api/utils"
@@ -24,7 +23,10 @@ func DefaultUserService(t *testing.T) *services.DefaultUserService {
 	if err != nil {
 		t.Fatalf("Error creating memory user repository: %v", err)
 	}
-	tokenRepo := repositories.NewMemoryTokenRepository(nil)
+	tokenRepo, err := testutils.NewMemoryTokenRepositoryWithTokens()
+	if err != nil {
+		t.Fatalf("Error creating memory token repository: %v", err)
+	}
 	authenticator := auth.NewJWTAuthenticator(config.AuthConfig{
 		JWTSecret: "secret",
 		Issuer:    "test",
@@ -328,6 +330,35 @@ func TestDefaultUserService_DeleteUser(t *testing.T) {
 				t.Errorf("Expected error, got nil")
 			} else if !test.expectedToFail && apiError != nil {
 				t.Errorf("Expected no error, got %v", apiError)
+			}
+		})
+	}
+}
+
+func TestDefaultUserService_ForceLogoutUser(t *testing.T) {
+	service := DefaultUserService(t)
+
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		expected *utils.APIError
+	}{
+		{
+			name:     "Force logout a user with existing id",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: nil,
+		}, {
+			name:     "Force logout a user with non-existing id",
+			id:       uuid.New(),
+			expected: utils.NewAPIError("No tokens founds linked to user.", fiber.StatusNotFound),
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			apiError := service.ForceLogoutUser(context.Background(), test.id)
+			if !reflect.DeepEqual(apiError, test.expected) {
+				t.Errorf("Expected error %v, got %v", test.expected, apiError)
 			}
 		})
 	}

@@ -923,3 +923,94 @@ func FuzzDefaultUserHandler_DeleteUser(f *testing.F) {
 		}
 	})
 }
+
+func TestDefaultUserHandler_ForceLogoutUser(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/forceLogout/:id", Middleware(), handler.ForceLogoutUser())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		userId         uuid.UUID
+		expectedStatus int
+	}{
+		{
+			name:           "Force logout a user with existing id",
+			userId:         uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expectedStatus: http.StatusOK,
+		}, {
+			name:           "Force logout a user with non-existing id",
+			userId:         uuid.New(),
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/users/forceLogout/"+test.userId.String(), "PATCH", tokens.AccessToken, nil)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_ForceLogoutUser(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/forceLogout/:id", Middleware(), handler.ForceLogoutUser())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+	id := uuid.New().String()
+
+	for b.Loop() {
+		_, requestErr := testutils.SendRequest(app, "/users/forceLogout/"+id, "POST", tokens.AccessToken, nil)
+
+		if requestErr != nil {
+			b.Fatalf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_ForceLogoutUser(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/forceLogout/:id", Middleware(), handler.ForceLogoutUser())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add(tokens.AccessToken, uuid.New().String())
+	f.Add("", "")
+
+	f.Fuzz(func(t *testing.T, token string, userId string) {
+		token = testutils.FilterToken(token)
+		userId = testutils.FilterPathValue(userId)
+		_, requestErr := testutils.SendRequest(app, "/users/forceLogout/"+userId, "PATCH", token, nil)
+		if requestErr != nil {
+			t.Errorf("Error sending request: %v", requestErr)
+		}
+	})
+}

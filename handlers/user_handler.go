@@ -36,6 +36,10 @@ type UserHandler interface {
 
 	// DeleteUser returns handle used by admins to delete user data.
 	DeleteUser() fiber.Handler
+
+	// ForceLogoutUser returns a handler user by admins to forcibly logout user
+	// by removing all refresh tokens linked to the user.
+	ForceLogoutUser() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -238,6 +242,32 @@ func (h *DefaultUserHandler) DeleteUser() fiber.Handler {
 		}
 
 		apiError := h.service.DeleteUser(c.Context(), id)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) ForceLogoutUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		id := c.Params("id")
+		parsedId, err := uuid.Parse(id)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid id", fiber.StatusBadRequest))
+		}
+
+		apiError := h.service.ForceLogoutUser(c.Context(), parsedId)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}

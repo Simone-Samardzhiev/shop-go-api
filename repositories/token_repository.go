@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
+	"slices"
 )
 
 // TokenRepository defines method for managing token data.
@@ -16,11 +17,16 @@ type TokenRepository interface {
 
 	// DeleteToken deletes a token with a specific id.
 	//
-	// If the token was deleted, the result is true, otherwise if the token with this id doesn't,
+	// If the token was deleted, the result is true, otherwise if the token with this id doesn't exist,
 	// the result is false
 	//
 	// Error is returned if the token failed to delete due to an error(e. g database error)
 	DeleteToken(ctx context.Context, id uuid.UUID) (bool, error)
+
+	// DeleteTokenByUserId deletes tokens linked to a user id.
+	//
+	// If the token was deleted, the result is true, otherwise false
+	DeleteTokenByUserId(ctx context.Context, userId uuid.UUID) (bool, error)
 }
 
 // MemoryTokenRepository implements TokenRepository with slice of tokens
@@ -51,6 +57,18 @@ func (r *MemoryTokenRepository) DeleteToken(_ context.Context, id uuid.UUID) (bo
 
 	r.tokens[i] = r.tokens[len(r.tokens)-1]
 	r.tokens = r.tokens[:len(r.tokens)-1]
+	return true, nil
+}
+
+func (r *MemoryTokenRepository) DeleteTokenByUserId(ctx context.Context, userId uuid.UUID) (bool, error) {
+	previousLen := len(r.tokens)
+	r.tokens = slices.DeleteFunc(r.tokens, func(token *models.Token) bool {
+		return token.UserId == userId
+	})
+
+	if previousLen == len(r.tokens) {
+		return false, nil
+	}
 	return true, nil
 }
 
@@ -97,6 +115,25 @@ func (r *PostgresTokenRepository) DeleteToken(ctx context.Context, id uuid.UUID)
 	if err != nil {
 		return false, err
 	}
+	return rows > 0, nil
+}
+
+func (r *PostgresTokenRepository) DeleteTokenByUserId(ctx context.Context, userId uuid.UUID) (bool, error) {
+	result, err := r.db.ExecContext(
+		ctx,
+		`DELETE FROM
+        tokens WHERE user_id = $1`,
+		userId,
+	)
+
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
 	return rows > 0, nil
 }
 

@@ -63,6 +63,7 @@ func (a *api) start() error {
 	userGroup.Get("/userInfo/:id", a.Handlers.UserHandler.GetUserById())
 	userGroup.Patch("/updateUser", a.Handlers.UserHandler.UpdateUser())
 	userGroup.Delete("/deleteUser/:id", a.Handlers.UserHandler.DeleteUser())
+	userGroup.Patch("/forceLogout/:id", a.Handlers.UserHandler.ForceLogoutUser())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }
