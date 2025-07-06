@@ -19,6 +19,11 @@ migrate-up-test:
 migrate-down:
 	@migrate -path  $(MIGRATIONS_PATH) -database $(DATABASE_URL) down
 
+.PHONY: migrate-down-test
+migrate-down-test:
+	@migrate -path  $(MIGRATIONS_PATH) -database $(TEST_DATABASE_URL) down
+
+
 .PHONY: start
 start:
 	@go run ./cmd/api/main.go
