@@ -47,6 +47,16 @@ type UserService interface {
 	// Return the models.UserInfo if the user was found or utils.APIError if any error occurred.
 	GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError)
 
+	// GetUserByEmail fetches a user's information by their email address.
+	//
+	// Return the models.UserInfo if the user was found or utils.APIError if any error occurred.
+	GetUserByEmail(ctx context.Context, email string) (*models.UserInfo, *utils.APIError)
+
+	// GetUserByUsername fetches a user's information by their username address.
+	//
+	// Return the models.UserInfo if the user was found or utils.APIError if any error occurred.
+	GetUserByUsername(ctx context.Context, username string) (*models.UserInfo, *utils.APIError)
+
 	// UpdateUser used to update user data by specific id.
 	//
 	// Return utils.APIError if the user was not found, or if any error occurred.
@@ -203,12 +213,37 @@ func (s *DefaultUserService) GetUsers(ctx context.Context, limit, page int, role
 
 func (s *DefaultUserService) GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError) {
 	result, err := s.userRepository.GetUserById(ctx, id)
-	if errors.Is(err, sql.ErrNoRows) {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
-	} else if err != nil {
+	case err != nil:
 		return nil, utils.InternalServerAPIError()
-	} else {
+	default:
 		return result, nil
+	}
+}
+
+func (s *DefaultUserService) GetUserByEmail(ctx context.Context, email string) (*models.UserInfo, *utils.APIError) {
+	result, err := s.userRepository.GetUserByEmail(ctx, email)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	case err != nil:
+		return nil, utils.InternalServerAPIError()
+	default:
+		return result, nil
+	}
+}
+
+func (s *DefaultUserService) GetUserByUsername(ctx context.Context, username string) (*models.UserInfo, *utils.APIError) {
+	result, err := s.userRepository.GetUserByUsername(ctx, username)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	case err != nil:
+		return nil, utils.InternalServerAPIError()
+	default:
+		return models.NewUserInfo(result.Id, result.Email, result.Username, result.Role, result.Active), nil
 	}
 }
 

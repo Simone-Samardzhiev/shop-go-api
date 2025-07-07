@@ -727,6 +727,199 @@ func FuzzDefaultUserHandler_GetUserById(f *testing.F) {
 	})
 }
 
+func TestDefaultUserHandler_GetUserByEmail(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/email/:email", Middleware(), handler.GetUserByEmail())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	tests := []struct {
+		name             string
+		email            string
+		expectedStatus   int
+		expectedUsername string
+	}{
+		{
+			name:             "Get user by existing email",
+			email:            "user1@example.com",
+			expectedStatus:   fiber.StatusOK,
+			expectedUsername: "john_doe",
+		}, {
+			name:             "Get user by non-existing email",
+			email:            "g",
+			expectedStatus:   fiber.StatusNotFound,
+			expectedUsername: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/users/email/"+test.email, "GET", tokens.AccessToken, nil)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Fatalf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+
+			var user models.UserInfo
+			decoderErr := json.NewDecoder(res.Body).Decode(&user)
+			if decoderErr != nil {
+				t.Fatalf("Error decoding response: %v", decoderErr)
+			}
+			if user.Username != test.expectedUsername {
+				t.Errorf("Expected username %s, got %s", test.expectedUsername, user.Username)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_GetUserByEmail(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/email/:email", Middleware(), handler.GetUserByEmail())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	for b.Loop() {
+		_, requestErr := testutils.SendRequest(app, "/users/email/"+"user1@example.com", "GET", tokens.AccessToken, nil)
+		if requestErr != nil {
+			b.Errorf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_GetUserByEmail(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/email/:email", Middleware(), handler.GetUserByEmail())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add("email@example.com", tokens.AccessToken)
+	f.Add("", "")
+	f.Fuzz(func(t *testing.T, email, token string) {
+		email = testutils.FilterPathValue(email)
+		token = testutils.FilterToken(token)
+
+		_, requestErr := testutils.SendRequest(app, "/users/email/"+email, "GET", tokens.AccessToken, nil)
+		if requestErr != nil {
+			t.Errorf("Error sending request: %v", requestErr)
+		}
+	})
+}
+
+func TestDefaultUserHandler_GetUserByUsername(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/username/:username", Middleware(), handler.GetUserByUsername())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		username       string
+		expectedStatus int
+		expectedEmail  string
+	}{
+		{
+			name:           "Get user with existing username",
+			username:       "john_doe",
+			expectedStatus: fiber.StatusOK,
+			expectedEmail:  "user1@example.com",
+		}, {
+			name:           "Get user with non-existing username",
+			username:       "g",
+			expectedStatus: fiber.StatusNotFound,
+			expectedEmail:  "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/users/username/"+test.username, "GET", tokens.AccessToken, nil)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Fatalf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_GetUserByUsername(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/username/:username", Middleware(), handler.GetUserByUsername())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	for b.Loop() {
+		_, requestErr := testutils.SendRequest(app, "/users/username/"+"john_doe", "GET", tokens.AccessToken, nil)
+		if requestErr != nil {
+			b.Errorf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_GetUserByUsername(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Get("/users/username/:username", Middleware(), handler.GetUserByUsername())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add("john_doe", tokens.AccessToken)
+	f.Add("", "")
+	f.Fuzz(func(t *testing.T, username, token string) {
+		username = testutils.FilterPathValue(username)
+		token = testutils.FilterToken(token)
+
+		_, requestErr := testutils.SendRequest(app, "/users/username/"+username, "GET", tokens.AccessToken, nil)
+		if requestErr != nil {
+			t.Errorf("Error sending request: %v", requestErr)
+		}
+	})
+}
+
 func TestDefaultUserHandler_UpdateUser(t *testing.T) {
 	handler, err := DefaultUserHandler()
 	if err != nil {

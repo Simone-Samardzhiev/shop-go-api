@@ -47,45 +47,6 @@ func TestMemoryUserRepository_AddUser(t *testing.T) {
 	}
 }
 
-func TestMemoryUserRepository_GetUserByUsername(t *testing.T) {
-	repo := memoryUserRepository(t)
-
-	tests := []struct {
-		name          string
-		username      string
-		expectedEmail string
-		expectedError error
-	}{
-		{
-			name:          "Present username",
-			username:      "john_doe",
-			expectedEmail: "user1@example.com",
-			expectedError: nil,
-		}, {
-			name:          "Absent username",
-			username:      "john_doe1",
-			expectedEmail: "",
-			expectedError: sql.ErrNoRows,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			user, err := repo.GetUserByUsername(context.Background(), test.username)
-
-			if errors.Is(err, test.expectedError) {
-				return
-			} else {
-				t.Errorf("Expected error %v, got %v", test.expectedError, err)
-			}
-
-			if test.expectedEmail != user.Email {
-				t.Errorf("Expected email %v, got %v", test.expectedEmail, user.Email)
-			}
-		})
-	}
-}
-
 func TestMemoryUserRepository_GetUsers(t *testing.T) {
 	repo := memoryUserRepository(t)
 
@@ -216,6 +177,82 @@ func TestMemoryUserRepository_GetUserByID(t *testing.T) {
 
 			if result.Email != test.expectedEmail {
 				t.Errorf("Expected email %v, got %v", test.expectedEmail, result.Email)
+			}
+		})
+	}
+}
+
+func TestMemoryUserRepository_GetUserByEmail(t *testing.T) {
+	repo := memoryUserRepository(t)
+	tests := []struct {
+		name             string
+		email            string
+		expectedUsername string
+		expectedError    error
+	}{
+		{
+			name:             "Get user by existing email email",
+			email:            "user1@example.com",
+			expectedUsername: "john_doe",
+			expectedError:    nil,
+		}, {
+			name:             "Get user by non-existing email",
+			email:            "",
+			expectedUsername: "",
+			expectedError:    sql.ErrNoRows,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := repo.GetUserByEmail(context.Background(), test.email)
+			if errors.Is(err, test.expectedError) {
+				return
+			} else {
+				t.Errorf("Expected error %v, got %v", test.expectedError, err)
+			}
+
+			if result.Username != test.expectedUsername {
+				t.Errorf("Expected username %v, got %v", test.expectedUsername, result.Username)
+			}
+		})
+	}
+}
+
+func TestMemoryUserRepository_GetUserByUsername(t *testing.T) {
+	repo := memoryUserRepository(t)
+
+	tests := []struct {
+		name          string
+		username      string
+		expectedEmail string
+		expectedError error
+	}{
+		{
+			name:          "Present username",
+			username:      "john_doe",
+			expectedEmail: "user1@example.com",
+			expectedError: nil,
+		}, {
+			name:          "Absent username",
+			username:      "john_doe1",
+			expectedEmail: "",
+			expectedError: sql.ErrNoRows,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			user, err := repo.GetUserByUsername(context.Background(), test.username)
+
+			if errors.Is(err, test.expectedError) {
+				return
+			} else {
+				t.Errorf("Expected error %v, got %v", test.expectedError, err)
+			}
+
+			if test.expectedEmail != user.Email {
+				t.Errorf("Expected email %v, got %v", test.expectedEmail, user.Email)
 			}
 		})
 	}
@@ -354,46 +391,6 @@ func TestPostgresUserRepository_AddUser(t *testing.T) {
 	}
 }
 
-func TestPostgresUserRepository_GetUserByUsername(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
-
-	tests := []struct {
-		name          string
-		username      string
-		expectedEmail string
-		expectedError error
-	}{
-		{
-			name:          "Present username",
-			username:      "john_doe",
-			expectedEmail: "user1@example.com",
-			expectedError: nil,
-		}, {
-			name:          "Absent username",
-			username:      "john_doe1",
-			expectedEmail: "",
-			expectedError: sql.ErrNoRows,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			user, err := userPostgresRepository.GetUserByUsername(context.Background(), test.username)
-
-			if errors.Is(err, test.expectedError) {
-				return
-			} else {
-				t.Errorf("Expected error %v, got %v", test.expectedError, err)
-			}
-
-			if user.Email != test.expectedEmail {
-				t.Errorf("Expected email %v, got %v", test.expectedEmail, user.Email)
-			}
-		})
-	}
-}
-
 func TestPostgresUserRepository_GetUsers(t *testing.T) {
 	seedUserDatabase(t)
 	t.Cleanup(cleanupUserDatabase)
@@ -527,6 +524,85 @@ func TestPostgresUserRepository_GetUserByID(t *testing.T) {
 
 			if result.Email != test.expectedEmail {
 				t.Errorf("Expected email %v, got %v", test.expectedEmail, result.Email)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_GetUserByEmail(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
+
+	tests := []struct {
+		name             string
+		email            string
+		expectedUsername string
+		expectedError    error
+	}{
+		{
+			name:             "Get user by existing email email",
+			email:            "user1@example.com",
+			expectedUsername: "john_doe",
+			expectedError:    nil,
+		}, {
+			name:             "Get user by non-existing email",
+			email:            "",
+			expectedUsername: "",
+			expectedError:    sql.ErrNoRows,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := userPostgresRepository.GetUserByEmail(context.Background(), test.email)
+			if errors.Is(err, test.expectedError) {
+				return
+			} else {
+				t.Errorf("Expected error %v, got %v", test.expectedError, err)
+			}
+
+			if result.Username != test.expectedUsername {
+				t.Errorf("Expected username %v, got %v", test.expectedUsername, result.Username)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_GetUserByUsername(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
+
+	tests := []struct {
+		name          string
+		username      string
+		expectedEmail string
+		expectedError error
+	}{
+		{
+			name:          "Present username",
+			username:      "john_doe",
+			expectedEmail: "user1@example.com",
+			expectedError: nil,
+		}, {
+			name:          "Absent username",
+			username:      "john_doe1",
+			expectedEmail: "",
+			expectedError: sql.ErrNoRows,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			user, err := userPostgresRepository.GetUserByUsername(context.Background(), test.username)
+
+			if errors.Is(err, test.expectedError) {
+				return
+			} else {
+				t.Errorf("Expected error %v, got %v", test.expectedError, err)
+			}
+
+			if user.Email != test.expectedEmail {
+				t.Errorf("Expected email %v, got %v", test.expectedEmail, user.Email)
 			}
 		})
 	}

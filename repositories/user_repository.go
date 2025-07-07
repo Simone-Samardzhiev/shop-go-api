@@ -16,11 +16,6 @@ type UserRepository interface {
 	// Returns an error if the user could not be added (e.g., duplicate entry or database error).
 	AddUser(ctx context.Context, user *models.User) error
 
-	// GetUserByUsername gets a user by specified username.
-	//
-	// Returns an error if a user with the specified username doesn't exist or there was a database error.
-	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
-
 	// GetUsers gets UserInfo from users.
 	//
 	// The limit specifies how many users are returned.
@@ -39,21 +34,31 @@ type UserRepository interface {
 	// Returns an error if a user with the specified id doesn't exist or there was a database error.
 	GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, error)
 
+	// GetUserByEmail fetches a user with a specific email.
+	//
+	// Retunes an error if a user with the specified email doesn't exist or there was a database error.
+	GetUserByEmail(ctx context.Context, email string) (*models.UserInfo, error)
+
+	// GetUserByUsername gets a user by specified username.
+	//
+	// Returns an error if a user with the specified username doesn't exist or there was a database error.
+	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
+
 	// UpdateUser updates user data.
 	//
-	// Return true if the user was found and updated.
+	// Returns true if the user was found and updated.
 	UpdateUser(ctx context.Context, user *models.UpdateUserPayload) (bool, error)
 
 	// DeleteUser deletes a user with a specific id.
 	//
 	// Returns true if the user was deleted or false if the user was not found.
-	// Retune error if there was a database error.
+	// Returns error if there was a database error.
 	DeleteUser(ctx context.Context, id uuid.UUID) (bool, error)
 
 	// CheckIfUserIsActive checks if a user with a specific id is active.
 	//
 	// Return true if the user is active.
-	// Return error if there was a database error.
+	// Returns error if there was a database error.
 	CheckIfUserIsActive(ctx context.Context, id uuid.UUID) (bool, error)
 }
 
@@ -83,15 +88,6 @@ func (r *MemoryUserRepository) AddUser(_ context.Context, user *models.User) err
 
 	r.users = append(r.users, user)
 	return nil
-}
-
-func (r *MemoryUserRepository) GetUserByUsername(_ context.Context, username string) (*models.User, error) {
-	for _, u := range r.users {
-		if u.Username == username {
-			return u, nil
-		}
-	}
-	return nil, sql.ErrNoRows
 }
 
 func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*models.UserInfo, error) {
@@ -153,6 +149,25 @@ func (r *MemoryUserRepository) GetUserById(_ context.Context, id uuid.UUID) (*mo
 	for _, u := range r.users {
 		if u.Id == id {
 			return models.NewUserInfo(u.Id, u.Email, u.Username, u.Role, u.Active), nil
+		}
+	}
+	return nil, sql.ErrNoRows
+}
+
+func (r *MemoryUserRepository) GetUserByEmail(_ context.Context, email string) (*models.UserInfo, error) {
+	for _, u := range r.users {
+		if u.Email == email {
+			return models.NewUserInfo(u.Id, u.Email, u.Username, u.Role, u.Active), nil
+		}
+	}
+
+	return nil, sql.ErrNoRows
+}
+
+func (r *MemoryUserRepository) GetUserByUsername(_ context.Context, username string) (*models.User, error) {
+	for _, u := range r.users {
+		if u.Username == username {
+			return u, nil
 		}
 	}
 	return nil, sql.ErrNoRows
@@ -225,20 +240,6 @@ func (r *PostgresUserRepository) AddUser(ctx context.Context, user *models.User)
 	)
 
 	return err
-}
-
-func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
-	row := r.db.QueryRowContext(
-		ctx,
-		`SELECT id, email, username, password, user_role
-		FROM users
-		WHERE username = $1`,
-		username,
-	)
-
-	var user models.User
-	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.Role)
-	return &user, err
 }
 
 func (r *PostgresUserRepository) GetUsers(ctx context.Context, limit, page int) ([]*models.UserInfo, error) {
@@ -328,6 +329,34 @@ func (r *PostgresUserRepository) GetUserById(ctx context.Context, id uuid.UUID) 
 
 	var user models.UserInfo
 	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Role)
+	return &user, err
+}
+
+func (r *PostgresUserRepository) GetUserByEmail(ctx context.Context, email string) (*models.UserInfo, error) {
+	row := r.db.QueryRowContext(
+		ctx,
+		`SELECT id, email, username, user_role
+		FROM users
+		WHERE email = $1`,
+		email,
+	)
+
+	var user models.UserInfo
+	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Role)
+	return &user, err
+}
+
+func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	row := r.db.QueryRowContext(
+		ctx,
+		`SELECT id, email, username, password, user_role, active
+		FROM users
+		WHERE username = $1`,
+		username,
+	)
+
+	var user models.User
+	err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.Role, &user.Active)
 	return &user, err
 }
 

@@ -28,13 +28,19 @@ type UserHandler interface {
 	// GetUsers returns handler used by admins to see users' information.
 	GetUsers() fiber.Handler
 
-	// GetUserById returns handler used by admins to see specific user information.
+	// GetUserById returns a handler used by admins to retrieve a user's information by their id.
 	GetUserById() fiber.Handler
 
-	// UpdateUser returns handler used by admins to update user data.
+	// GetUserByEmail returns a handler used by admins to retrieve a user's information by their email address.
+	GetUserByEmail() fiber.Handler
+
+	// GetUserByUsername returns a handler used by admins to retrieve a user's information by their username address.
+	GetUserByUsername() fiber.Handler
+
+	// UpdateUser returns a handler used by admins to update user data.
 	UpdateUser() fiber.Handler
 
-	// DeleteUser returns handle used by admins to delete user data.
+	// DeleteUser returns a handler used by admins to delete user data.
 	DeleteUser() fiber.Handler
 
 	// ForceLogoutUser returns a handler user by admins to forcibly logout user
@@ -195,6 +201,44 @@ func (h *DefaultUserHandler) GetUserById() fiber.Handler {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
 
+		return c.Status(fiber.StatusOK).JSON(result)
+	}
+}
+
+func (h *DefaultUserHandler) GetUserByEmail() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		email := c.Params("email")
+		result, apiError := h.service.GetUserByEmail(c.Context(), email)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+		return c.Status(fiber.StatusOK).JSON(result)
+	}
+}
+
+func (h *DefaultUserHandler) GetUserByUsername() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		username := c.Params("username")
+		result, apiError := h.service.GetUserByUsername(c.Context(), username)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
 		return c.Status(fiber.StatusOK).JSON(result)
 	}
 }

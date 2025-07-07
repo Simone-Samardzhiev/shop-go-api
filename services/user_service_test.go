@@ -270,6 +270,72 @@ func TestDefaultUserService_GetUserByID(t *testing.T) {
 	}
 }
 
+func TestDefaultUserService_GetUserByEmail(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name             string
+		email            string
+		expectedUsername string
+		expectedError    *utils.APIError
+	}{
+		{
+			name:             "Get user with existing email",
+			email:            "user1@example.com",
+			expectedUsername: "john_doe",
+			expectedError:    nil,
+		}, {
+			name:             "Get user with non-existing email",
+			email:            "",
+			expectedUsername: "",
+			expectedError:    utils.NewAPIError("User not found.", fiber.StatusNotFound),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, apiError := service.GetUserByEmail(context.Background(), test.email)
+			if !reflect.DeepEqual(apiError, test.expectedError) {
+				t.Errorf("Expected error %v, got %v", test.expectedError, apiError)
+			} else if test.expectedError == nil && result.Username != test.expectedUsername {
+				t.Errorf("Expected username %v, got %v", test.expectedUsername, result.Username)
+			}
+		})
+	}
+}
+
+func TestDefaultUserService_GetUserByUsername(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name          string
+		username      string
+		expectedEmail string
+		expectedError *utils.APIError
+	}{
+		{
+			name:          "Get user with existing username",
+			username:      "john_doe",
+			expectedEmail: "user1@example.com",
+			expectedError: nil,
+		}, {
+			name:          "Get user with non-existing username",
+			username:      "",
+			expectedEmail: "",
+			expectedError: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, apiError := service.GetUserByUsername(context.Background(), test.username)
+			if !reflect.DeepEqual(apiError, test.expectedError) {
+				t.Errorf("Expected error %v, got %v", test.expectedError, apiError)
+			} else if test.expectedError == nil && result.Email != test.expectedEmail {
+				t.Errorf("Expected email %v, got %v", test.expectedEmail, result.Email)
+			}
+		})
+	}
+}
+
 func TestDefaultUserService_UpdateUser(t *testing.T) {
 	service := DefaultUserService(t)
 
