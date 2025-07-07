@@ -131,15 +131,17 @@ type UserInfo struct {
 	Email    string    `json:"email"`
 	Username string    `json:"username"`
 	Role     UserRole  `json:"role"`
+	Active   bool      `json:"active"`
 }
 
 // NewUserInfo returns a new instance of UserInfo.
-func NewUserInfo(id uuid.UUID, email, username string, role UserRole) *UserInfo {
+func NewUserInfo(id uuid.UUID, email, username string, role UserRole, active bool) *UserInfo {
 	return &UserInfo{
 		Id:       id,
 		Email:    email,
 		Username: username,
 		Role:     role,
+		Active:   active,
 	}
 }
 

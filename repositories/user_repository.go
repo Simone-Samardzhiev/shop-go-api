@@ -112,6 +112,7 @@ func (r *MemoryUserRepository) GetUsers(_ context.Context, limit, page int) ([]*
 			r.users[i].Email,
 			r.users[i].Username,
 			r.users[i].Role,
+			r.users[i].Active,
 		))
 	}
 
@@ -129,6 +130,7 @@ func (r *MemoryUserRepository) GetUsersByRole(_ context.Context, limit, page int
 					u.Email,
 					u.Username,
 					u.Role,
+					u.Active,
 				),
 			)
 		}
@@ -150,7 +152,7 @@ func (r *MemoryUserRepository) GetUsersByRole(_ context.Context, limit, page int
 func (r *MemoryUserRepository) GetUserById(_ context.Context, id uuid.UUID) (*models.UserInfo, error) {
 	for _, u := range r.users {
 		if u.Id == id {
-			return models.NewUserInfo(u.Id, u.Email, u.Username, u.Role), nil
+			return models.NewUserInfo(u.Id, u.Email, u.Username, u.Role, u.Active), nil
 		}
 	}
 	return nil, sql.ErrNoRows
@@ -245,7 +247,7 @@ func (r *PostgresUserRepository) GetUsers(ctx context.Context, limit, page int) 
 
 	rows, err := r.db.QueryContext(
 		ctx,
-		` SELECT id, email, username, user_role
+		` SELECT id, email, username, user_role, active
  		FROM users
  		OFFSET $1
  		LIMIT $2
@@ -267,7 +269,7 @@ func (r *PostgresUserRepository) GetUsers(ctx context.Context, limit, page int) 
 
 	for rows.Next() {
 		var info models.UserInfo
-		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.Role)
+		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.Role, &info.Active)
 		if err != nil {
 			return result, err
 		}
@@ -283,7 +285,7 @@ func (r *PostgresUserRepository) GetUsersByRole(ctx context.Context, limit, page
 
 	rows, err := r.db.QueryContext(
 		ctx,
-		`SELECT id, email, username, user_role
+		`SELECT id, email, username, user_role, active
 		FROM users 
 		WHERE user_role = $1 
 		OFFSET $2 
@@ -305,7 +307,7 @@ func (r *PostgresUserRepository) GetUsersByRole(ctx context.Context, limit, page
 
 	for rows.Next() {
 		var info models.UserInfo
-		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.Role)
+		err = rows.Scan(&info.Id, &info.Email, &info.Username, &info.Role, &info.Active)
 		if err != nil {
 			return result, err
 		}
