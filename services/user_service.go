@@ -245,7 +245,7 @@ func (s *DefaultUserService) DeleteUser(ctx context.Context, id uuid.UUID) *util
 }
 
 func (s *DefaultUserService) ForceLogoutUser(ctx context.Context, id uuid.UUID) *utils.APIError {
-	result, err := s.tokenRepository.DeleteTokenByUserId(ctx, id)
+	result, err := s.tokenRepository.DeleteTokensByUserId(ctx, id)
 	if err != nil {
 		return utils.InternalServerAPIError()
 	}
