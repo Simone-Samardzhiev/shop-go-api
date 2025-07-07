@@ -60,7 +60,7 @@ func (r *MemoryTokenRepository) DeleteToken(_ context.Context, id uuid.UUID) (bo
 	return true, nil
 }
 
-func (r *MemoryTokenRepository) DeleteTokensByUserId(_ctx context.Context, userId uuid.UUID) (bool, error) {
+func (r *MemoryTokenRepository) DeleteTokensByUserId(_ context.Context, userId uuid.UUID) (bool, error) {
 	previousLen := len(r.tokens)
 	r.tokens = slices.DeleteFunc(r.tokens, func(token *models.Token) bool {
 		return token.UserId == userId
