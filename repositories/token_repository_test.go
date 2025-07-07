@@ -96,7 +96,7 @@ func TestMemoryTokenRepository_DeleteTokenByUserId(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
-			result, err := repo.DeleteTokenByUserId(context.Background(), test.userId)
+			result, err := repo.DeleteTokensByUserId(context.Background(), test.userId)
 			if err != nil {
 				t.Fatalf("Error deleting token: %v", err)
 			}
@@ -203,7 +203,7 @@ func TestPostgresTokenRepository_DeleteTokenByUserId(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
-			result, err := tokenPostgresRepository.DeleteTokenByUserId(context.Background(), test.userId)
+			result, err := tokenPostgresRepository.DeleteTokensByUserId(context.Background(), test.userId)
 			if err != nil {
 				t.Fatalf("Error deleting token: %v", err)
 			}

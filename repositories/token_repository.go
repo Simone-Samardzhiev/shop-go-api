@@ -23,10 +23,10 @@ type TokenRepository interface {
 	// Error is returned if the token failed to delete due to an error(e. g database error)
 	DeleteToken(ctx context.Context, id uuid.UUID) (bool, error)
 
-	// DeleteTokenByUserId deletes tokens linked to a user id.
+	// DeleteTokensByUserId deletes tokens linked to a user id.
 	//
 	// If the token was deleted, the result is true, otherwise false
-	DeleteTokenByUserId(ctx context.Context, userId uuid.UUID) (bool, error)
+	DeleteTokensByUserId(ctx context.Context, userId uuid.UUID) (bool, error)
 }
 
 // MemoryTokenRepository implements TokenRepository with slice of tokens
@@ -60,7 +60,7 @@ func (r *MemoryTokenRepository) DeleteToken(_ context.Context, id uuid.UUID) (bo
 	return true, nil
 }
 
-func (r *MemoryTokenRepository) DeleteTokenByUserId(ctx context.Context, userId uuid.UUID) (bool, error) {
+func (r *MemoryTokenRepository) DeleteTokensByUserId(_ctx context.Context, userId uuid.UUID) (bool, error) {
 	previousLen := len(r.tokens)
 	r.tokens = slices.DeleteFunc(r.tokens, func(token *models.Token) bool {
 		return token.UserId == userId
@@ -118,7 +118,7 @@ func (r *PostgresTokenRepository) DeleteToken(ctx context.Context, id uuid.UUID)
 	return rows > 0, nil
 }
 
-func (r *PostgresTokenRepository) DeleteTokenByUserId(ctx context.Context, userId uuid.UUID) (bool, error) {
+func (r *PostgresTokenRepository) DeleteTokensByUserId(ctx context.Context, userId uuid.UUID) (bool, error) {
 	result, err := r.db.ExecContext(
 		ctx,
 		`DELETE FROM
