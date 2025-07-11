@@ -18,15 +18,15 @@ import (
 	"net/http"
 )
 
-// api struct contains the application.
-type api struct {
+// API struct contains the application.
+type API struct {
 	// Conf stores the configuration of the app.
 	Conf     *config.Config
 	Handlers handlers.Handlers
 }
 
 // start mounts the handlers and binds the app to the specified port.
-func (a *api) start() error {
+func (a *API) start() error {
 	app := fiber.New()
 
 	// If the group is for debug, add logger for easier development.
@@ -34,7 +34,7 @@ func (a *api) start() error {
 		app.Use(logger.New())
 	}
 
-	group := app.Group("/group/v1")
+	api := app.Group("/API/v1")
 	middleware := jwtware.New(jwtware.Config{
 		Claims: &auth.Claims{},
 		SigningKey: jwtware.SigningKey{
@@ -51,34 +51,36 @@ func (a *api) start() error {
 		},
 	})
 
-	// Router related to users
-	userGroup := group.Group("/users")
-	userGroup.Post("/register/client", a.Handlers.UserHandler.RegisterClient())
-	userGroup.Post("/login", a.Handlers.UserHandler.Login())
-	// Handlers that require authentication
-	userGroup.Use(middleware)
-	userGroup.Post("/register/admin", a.Handlers.UserHandler.RegisterUser())
-	userGroup.Get("/refresh", a.Handlers.UserHandler.RefreshSession())
-	userGroup.Get("/usersInfo", a.Handlers.UserHandler.GetUsers())
-	userGroup.Get("/userInfoById/:id", a.Handlers.UserHandler.GetUserById())
-	userGroup.Get("/userInfoByEmail/:email", a.Handlers.UserHandler.GetUserByEmail())
-	userGroup.Get("/userInfoByUsername/:username", a.Handlers.UserHandler.GetUserByUsername())
-	userGroup.Patch("/updateUser", a.Handlers.UserHandler.UpdateUser())
-	userGroup.Delete("/deleteUser/:id", a.Handlers.UserHandler.DeleteUser())
-	userGroup.Patch("/forceLogout/:id", a.Handlers.UserHandler.ForceLogoutUser())
+	// Group related to authentication.
+	authGroup := api.Group("/auth")
+	authGroup.Post("/register", a.Handlers.UserHandler.RegisterClient())
+	authGroup.Post("/login", a.Handlers.UserHandler.Login())
+	authGroup.Get("/refresh", middleware, a.Handlers.UserHandler.RefreshSession())
+
+	// Group related to admins used to manage users' data.
+	adminGroup := api.Group("/admins")
+	adminGroup.Use(middleware)
+	adminGroup.Post("/register", a.Handlers.UserHandler.RegisterUser())
+	adminGroup.Get("/usersInfo", a.Handlers.UserHandler.GetUsers())
+	adminGroup.Get("/usersInfo/:id", a.Handlers.UserHandler.GetUserById())
+	adminGroup.Get("/usersInfoByEmail/:email", a.Handlers.UserHandler.GetUserByEmail())
+	adminGroup.Get("/usersInfoByUsername/:username", a.Handlers.UserHandler.GetUserByUsername())
+	adminGroup.Post("/updateUser", a.Handlers.UserHandler.UpdateUser())
+	adminGroup.Delete("/deleteUser/:id", a.Handlers.UserHandler.DeleteUser())
+	adminGroup.Patch("/forceLogout/:id", a.Handlers.UserHandler.ForceLogoutUser())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }
 
-// newAPI create a newAPI instance of api.
-func newAPI() *api {
+// newAPI create a newAPI instance of API.
+func newAPI() *API {
 	conf := config.NewConfig()
 	db, err := database.Connect(conf.DbConfig)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 
-	return &api{
+	return &API{
 		Conf: conf,
 		Handlers: handlers.Handlers{
 			UserHandler: handlers.NewDefaultUserHandler(
@@ -100,5 +102,5 @@ func main() {
 
 	app := newAPI()
 	err = app.start()
-	log.Fatalf("Error starting the api with error: %v and configration: %+v", err, app.Conf)
+	log.Fatalf("Error starting the API with error: %v and configration: %+v", err, app.Conf)
 }
