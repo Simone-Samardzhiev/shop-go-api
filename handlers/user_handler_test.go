@@ -1207,3 +1207,124 @@ func FuzzDefaultUserHandler_ForceLogoutUser(f *testing.F) {
 		}
 	})
 }
+
+func TestDefaultUserHandler_ChangeUserPassword(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/changePassword", Middleware(), handler.ChangeUserPassword())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	type payload struct {
+		Id       uuid.UUID `json:"id"`
+		Password string    `json:"password"`
+	}
+	tests := []struct {
+		name           string
+		payload        *payload
+		expectedStatus int
+	}{
+		{
+			name: "Update with valid password and existing user",
+			payload: &payload{
+				Id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+				Password: "NewValidPassword_123",
+			},
+			expectedStatus: http.StatusOK,
+		}, {
+			name: "Update with valid password and non-existing user",
+			payload: &payload{
+				Id:       uuid.New(),
+				Password: "NewValidPassword_123",
+			},
+			expectedStatus: http.StatusNotFound,
+		}, {
+			name: "Update with invalid password",
+			payload: &payload{
+				Id:       uuid.Nil,
+				Password: "",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/users/changePassword", "PATCH", tokens.AccessToken, test.payload)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_ChangeUserPassword(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/changePassword", Middleware(), handler.ChangeUserPassword())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	var payload = struct {
+		Id       uuid.UUID `json:"id"`
+		Password string    `json:"password"`
+	}{
+		Id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+		Password: "NewValidPassword_123",
+	}
+
+	for b.Loop() {
+		_, requestErr := testutils.SendRequest(app, "/users/changePassword", "PATCH", tokens.AccessToken, &payload)
+		if requestErr != nil {
+			b.Fatalf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_ChangeUserPassword(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/users/changePassword", Middleware(), handler.ChangeUserPassword())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add(tokens.AccessToken, uuid.New().String(), "NewValidPassword_123")
+	f.Add("", uuid.Nil.String(), "")
+
+	f.Fuzz(func(t *testing.T, token string, id string, password string) {
+		token = testutils.FilterToken(token)
+
+		payload := struct {
+			Id       string `json:"id"`
+			Password string `json:"password"`
+		}{
+			Id:       id,
+			Password: password,
+		}
+		_, requestErr := testutils.SendRequest(app, "/users/changePassword", "PATCH", token, &payload)
+		if requestErr != nil {
+			t.Errorf("Error sending request: %v", requestErr)
+		}
+	})
+}

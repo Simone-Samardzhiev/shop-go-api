@@ -429,3 +429,34 @@ func TestDefaultUserService_ForceLogoutUser(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultUserService_ChangeUserPassword(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		password string
+		expected *utils.APIError
+	}{
+		{
+			name:     "Change user password with existing id",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			password: "NewPassword1234",
+			expected: nil,
+		}, {
+			name:     "Change user password with non-existing id",
+			id:       uuid.New(),
+			password: "NewPassword1234",
+			expected: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			apiError := service.ChangeUserPassword(context.Background(), test.id, test.password)
+			if !reflect.DeepEqual(apiError, test.expected) {
+				t.Errorf("Expected error %v, got %v", test.expected, apiError)
+			}
+		})
+	}
+}

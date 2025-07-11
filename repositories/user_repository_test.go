@@ -354,6 +354,40 @@ func TestMemoryUserRepository_CheckIfUserIsActive(t *testing.T) {
 	}
 }
 
+func TestMemoryUserRepository_ChangePassword(t *testing.T) {
+	repo := memoryUserRepository(t)
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		password string
+		expected bool
+	}{
+		{
+			name:     "Change password of existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			password: "NewPassword_1234",
+			expected: true,
+		}, {
+			name:     "Change password of non-existing user",
+			id:       uuid.New(),
+			password: "NewPassword_1234",
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := repo.ChangePassword(context.Background(), test.id, test.password)
+			if err != nil {
+				t.Fatalf("Error changing password: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
 func TestPostgresUserRepository_AddUser(t *testing.T) {
 	seedUserDatabase(t)
 	t.Cleanup(cleanupUserDatabase)
@@ -700,6 +734,42 @@ func TestPostgresUserRepository_CheckIfUserIsActive(t *testing.T) {
 			result, err := userPostgresRepository.CheckIfUserIsActive(context.Background(), test.id)
 			if err != nil {
 				t.Fatalf("Error checking if user is active: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_ChangePassword(t *testing.T) {
+	seedUserDatabase(t)
+	t.Cleanup(cleanupUserDatabase)
+
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		password string
+		expected bool
+	}{
+		{
+			name:     "Change password of existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			password: "NewPassword_1234",
+			expected: true,
+		}, {
+			name:     "Change password of non-existing user",
+			id:       uuid.New(),
+			password: "NewPassword_1234",
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := userPostgresRepository.ChangePassword(context.Background(), test.id, test.password)
+			if err != nil {
+				t.Fatalf("Error changing password: %v", err)
 			}
 			if result != test.expected {
 				t.Errorf("Expected %t, got %t", test.expected, result)

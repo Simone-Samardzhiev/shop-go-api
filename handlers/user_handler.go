@@ -5,6 +5,7 @@ import (
 	"api/models"
 	"api/services"
 	"api/utils"
+	"api/validate"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"strconv"
@@ -43,9 +44,12 @@ type UserHandler interface {
 	// DeleteUser returns a handler used by admins to delete user data.
 	DeleteUser() fiber.Handler
 
-	// ForceLogoutUser returns a handler user by admins to forcibly logout user
+	// ForceLogoutUser returns a handler used by admins to forcibly logout user
 	// by removing all refresh tokens linked to the user.
 	ForceLogoutUser() fiber.Handler
+
+	// ChangeUserPassword returns a handler used by admins to change the password of a specific user.
+	ChangeUserPassword() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -312,6 +316,43 @@ func (h *DefaultUserHandler) ForceLogoutUser() fiber.Handler {
 		}
 
 		apiError := h.service.ForceLogoutUser(c.Context(), parsedId)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) ChangeUserPassword() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		var payload struct {
+			Id       uuid.UUID `json:"id"`
+			Password string    `json:"password"`
+		}
+
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		ok = validate.Password(payload.Password)
+		if !ok {
+			return c.Status(fiber.StatusBadRequest).JSON(
+				utils.NewAPIError("Invalid password", fiber.StatusBadRequest),
+			)
+		}
+
+		apiError := h.service.ChangeUserPassword(c.Context(), payload.Id, payload.Password)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
