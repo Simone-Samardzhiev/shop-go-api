@@ -1,8 +1,8 @@
 package database
 
 import (
-	"api/config"
 	"database/sql"
+	"shop/cmd/api/internal/config"
 )
 
 func Connect(config *config.DatabaseConfig) (*sql.DB, error) {

@@ -1,13 +1,6 @@
 package main
 
 import (
-	"api/auth"
-	"api/config"
-	"api/database"
-	"api/handlers"
-	"api/repositories"
-	"api/services"
-	"api/utils"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -16,6 +9,13 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
+	"shop/cmd/api/internal/auth"
+	"shop/cmd/api/internal/config"
+	"shop/cmd/api/internal/database"
+	"shop/cmd/api/internal/handlers"
+	"shop/cmd/api/internal/repositories"
+	"shop/cmd/api/internal/services"
+	"shop/cmd/api/internal/utils"
 )
 
 // API struct contains the application.

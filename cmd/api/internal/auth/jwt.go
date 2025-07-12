@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"api/config"
-	"api/models"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"shop/cmd/api/internal/config"
+	"shop/cmd/api/internal/models"
 	"time"
 )
 

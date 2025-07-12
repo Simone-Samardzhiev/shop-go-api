@@ -1,13 +1,13 @@
 package testutils
 
 import (
-	"api/models"
 	"bytes"
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"shop/cmd/api/internal/models"
 )
 
 // SendRequest sends a request to a path with a specific method and JSON body.
@@ -41,7 +41,7 @@ func SendRequest(app *fiber.App, path, method, token string, body any) (*http.Re
 	return app.Test(req, -1)
 }
 
-// LoginAsAdmin send login request with a valid admin payload in testdata/users.json.
+// LoginAsAdmin send a login request with a valid admin payload in testdata/users.json.
 func LoginAsAdmin(app *fiber.App, path string) (*models.TokenGroup, error) {
 	res, err := SendRequest(app, path, "POST", "", models.NewLoginUserPayload("john_doe", "Password1!"))
 	if err != nil {

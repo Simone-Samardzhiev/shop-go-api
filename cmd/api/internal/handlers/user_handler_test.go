@@ -1,14 +1,6 @@
 package handlers_test
 
 import (
-	"api/auth"
-	"api/config"
-	"api/handlers"
-	"api/models"
-	"api/repositories"
-	"api/services"
-	"api/testutils"
-	"api/utils"
 	"bytes"
 	"encoding/json"
 	jwtware "github.com/gofiber/contrib/jwt"
@@ -17,6 +9,14 @@ import (
 	"github.com/google/uuid"
 	"net/http"
 	"net/url"
+	"shop/cmd/api/internal/auth"
+	"shop/cmd/api/internal/config"
+	"shop/cmd/api/internal/handlers"
+	"shop/cmd/api/internal/models"
+	"shop/cmd/api/internal/repositories"
+	"shop/cmd/api/internal/services"
+	"shop/cmd/api/internal/testutils"
+	"shop/cmd/api/internal/utils"
 	"strconv"
 	"testing"
 )

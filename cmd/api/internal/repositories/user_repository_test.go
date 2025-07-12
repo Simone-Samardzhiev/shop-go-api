@@ -1,13 +1,13 @@
 package repositories_test
 
 import (
-	"api/models"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+	"shop/cmd/api/internal/models"
 	"testing"
 )
 

@@ -1,9 +1,9 @@
 package models
 
 import (
-	"api/validate"
 	"errors"
 	"github.com/google/uuid"
+	"shop/cmd/api/internal/validate"
 )
 
 // RegisterClientPayload used by clients on registration.

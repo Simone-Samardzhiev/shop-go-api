@@ -1,12 +1,12 @@
 package repositories_test
 
 import (
-	"api/repositories"
-	"api/testutils"
 	"database/sql"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"shop/cmd/api/internal/repositories"
+	"shop/cmd/api/internal/testutils"
 	"testing"
 )
 
@@ -57,7 +57,7 @@ func memoryUserRepository(t *testing.T) *repositories.MemoryUserRepository {
 }
 
 // memoryTokenRepository will return repositories.MemoryTokenRepository with loaded users
-// or fail th test if loading fails.
+// or fail the test if loading fails.
 func memoryTokenRepository(t *testing.T) *repositories.MemoryTokenRepository {
 	t.Helper()
 
@@ -77,7 +77,7 @@ func seedUserDatabase(t *testing.T) {
 	}
 }
 
-// cleanupUserDatabase will truncate users table and reset the identity.
+// cleanupUserDatabase will truncate table users and reset the identity.
 func cleanupUserDatabase() {
 	err := testutils.CleanupDatabase([]string{"users"}, db)
 	if err != nil {
@@ -96,7 +96,7 @@ func seedTokenDatabase(t *testing.T) {
 	}
 }
 
-// cleanupTokenDatabase will truncate tokens table and reset the identity.
+// cleanupTokenDatabase will truncate table tokens and reset the identity.
 func cleanupTokenDatabase() {
 	err := testutils.CleanupDatabase([]string{"tokens"}, db)
 	if err != nil {

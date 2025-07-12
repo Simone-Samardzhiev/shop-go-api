@@ -1,16 +1,16 @@
 package services
 
 import (
-	"api/auth"
-	"api/models"
-	"api/repositories"
-	"api/utils"
 	"context"
 	"database/sql"
 	"errors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"shop/cmd/api/internal/auth"
+	"shop/cmd/api/internal/models"
+	"shop/cmd/api/internal/repositories"
+	"shop/cmd/api/internal/utils"
 	"time"
 )
 

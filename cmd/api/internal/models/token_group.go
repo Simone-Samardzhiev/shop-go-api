@@ -5,7 +5,7 @@ type TokenGroup struct {
 	AccessToken  string `json:"access_token"`
 }
 
-// NewTokenGroup returns new instance of TokenGroup
+// NewTokenGroup returns a new instance of TokenGroup
 func NewTokenGroup(refreshToken, accessToken string) *TokenGroup {
 	return &TokenGroup{
 		RefreshToken: refreshToken,

@@ -1,18 +1,18 @@
 package services_test
 
 import (
-	"api/auth"
-	"api/config"
-	"api/models"
-	"api/services"
-	"api/testutils"
-	"api/utils"
 	"context"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"reflect"
+	"shop/cmd/api/internal/auth"
+	"shop/cmd/api/internal/config"
+	"shop/cmd/api/internal/models"
+	"shop/cmd/api/internal/services"
+	"shop/cmd/api/internal/testutils"
+	"shop/cmd/api/internal/utils"
 	"testing"
 )
 

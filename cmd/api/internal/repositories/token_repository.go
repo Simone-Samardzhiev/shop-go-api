@@ -1,10 +1,10 @@
 package repositories
 
 import (
-	"api/models"
 	"context"
 	"database/sql"
 	"github.com/google/uuid"
+	"shop/cmd/api/internal/models"
 	"slices"
 )
 

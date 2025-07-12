@@ -1,12 +1,12 @@
 package repositories
 
 import (
-	"api/models"
 	"context"
 	"database/sql"
 	"errors"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"shop/cmd/api/internal/models"
 )
 
 // UserRepository defines methods used to modify user data.
@@ -61,7 +61,7 @@ type UserRepository interface {
 	// Returns error if there was a database error.
 	CheckIfUserIsActive(ctx context.Context, id uuid.UUID) (bool, error)
 
-	// ChangePassword changes the password of a user with specific id.
+	// ChangePassword changes the password of a user with a specific id.
 	//
 	// Returns true if the password was updated, or false if the use was not found.
 	// Returns error if there was a database error.

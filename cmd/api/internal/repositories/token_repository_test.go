@@ -1,10 +1,10 @@
 package repositories_test
 
 import (
-	"api/models"
 	"context"
 	"fmt"
 	"github.com/google/uuid"
+	"shop/cmd/api/internal/models"
 	"testing"
 	"time"
 )

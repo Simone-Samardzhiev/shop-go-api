@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"api/auth"
-	"api/models"
-	"api/services"
-	"api/utils"
-	"api/validate"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"shop/cmd/api/internal/auth"
+	"shop/cmd/api/internal/models"
+	"shop/cmd/api/internal/services"
+	"shop/cmd/api/internal/utils"
+	"shop/cmd/api/internal/validate"
 	"strconv"
 )
 

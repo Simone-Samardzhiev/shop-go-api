@@ -1,12 +1,12 @@
 package testutils
 
 import (
-	"api/auth"
-	"api/models"
-	"api/repositories"
 	"database/sql"
 	_ "embed"
 	"encoding/json"
+	"shop/cmd/api/internal/auth"
+	"shop/cmd/api/internal/models"
+	"shop/cmd/api/internal/repositories"
 )
 
 //go:embed testdata/users.json
@@ -47,7 +47,7 @@ func NewMemoryUserRepositoryWithUsers() (*repositories.MemoryUserRepository, err
 	return repositories.NewMemoryUserRepository(users), nil
 }
 
-// SeedUsersTable seeds users table with users loaded from testdata/users.json.
+// SeedUsersTable seeds table users with users loaded from testdata/users.json.
 func SeedUsersTable(db *sql.DB) error {
 	users, err := getUsers()
 	if err != nil {
