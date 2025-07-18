@@ -47,7 +47,7 @@ type UserService interface {
 	// Return the models.UserInfo if the user was found or utils.APIError if any error occurred.
 	GetUserById(ctx context.Context, id uuid.UUID) (*models.UserInfo, *utils.APIError)
 
-	// GetUserByEmail fetches a user's information by their email address.
+	// GetUserByEmail fetches a user's information by their username address.
 	//
 	// Return the models.UserInfo if the user was found or utils.APIError if any error occurred.
 	GetUserByEmail(ctx context.Context, email string) (*models.UserInfo, *utils.APIError)
@@ -67,10 +67,15 @@ type UserService interface {
 	// Returns utils.APIError if the none tokens are found, or if any error occurred.
 	ForceLogoutUser(ctx context.Context, id uuid.UUID) *utils.APIError
 
-	// UpdateUserEmail updates the email of a user by the id.
+	// UpdateUserEmail updates the username of a user by the id.
 	//
-	// Returns utils.APIError if the email is already in user or the updating fails.
+	// Returns utils.APIError if the username is already in use or the updating fails.
 	UpdateUserEmail(ctx context.Context, id uuid.UUID, newEmail string) *utils.APIError
+
+	// UpdateUserUsername updates the username of a user by the id.
+	//
+	// Returns utils.APIError if the username is already in use or the updating fails.
+	UpdateUserUsername(ctx context.Context, id uuid.UUID, newUsername string) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -95,7 +100,7 @@ func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.Regi
 		var pqErr *pq.Error
 		ok := errors.As(err, &pqErr)
 		if ok && pqErr.Code == "23505" {
-			return utils.NewAPIError("User email or password are already in use.", fiber.StatusConflict)
+			return utils.NewAPIError("User username or password are already in use.", fiber.StatusConflict)
 		} else if !ok {
 			return utils.InternalServerAPIError()
 		}
@@ -119,7 +124,7 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 		var pqErr *pq.Error
 		ok := errors.As(err, &pqErr)
 		if ok && pqErr.Code == "23505" {
-			return utils.NewAPIError("User email or password are already in use.", fiber.StatusConflict)
+			return utils.NewAPIError("User username or password are already in use.", fiber.StatusConflict)
 		} else if !ok {
 			return utils.InternalServerAPIError()
 		}
@@ -277,6 +282,23 @@ func (s *DefaultUserService) UpdateUserEmail(ctx context.Context, id uuid.UUID, 
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
 			return utils.NewAPIError("Email already in user", fiber.StatusConflict)
+		} else {
+			return utils.InternalServerAPIError()
+		}
+	}
+
+	if !result {
+		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	}
+	return nil
+}
+
+func (s *DefaultUserService) UpdateUserUsername(ctx context.Context, id uuid.UUID, newUsername string) *utils.APIError {
+	result, err := s.userRepository.UpdateUserUsername(ctx, id, newUsername)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			return utils.NewAPIError("Username already in user", fiber.StatusConflict)
 		} else {
 			return utils.InternalServerAPIError()
 		}

@@ -1229,3 +1229,134 @@ func FuzzDefaultUserHandler_UpdateUserEmail(f *testing.F) {
 		}
 	})
 }
+
+func TestDefaultUserHandler_UpdateUserUsername(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateUsername", Middleware(), handler.UpdateUserUsername())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	type payload struct {
+		Id       uuid.UUID `json:"id"`
+		Username string    `json:"username"`
+	}
+	tests := []struct {
+		name           string
+		payload        *payload
+		expectedStatus int
+	}{
+		{
+			name: "Update username of an existing user",
+			payload: &payload{
+				Id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+				Username: "NewUsername",
+			},
+			expectedStatus: http.StatusOK,
+		}, {
+			name: "Update username of an non-existing user",
+			payload: &payload{
+				Id:       uuid.New(),
+				Username: "NewUsername",
+			},
+			expectedStatus: http.StatusNotFound,
+		}, {
+			name: "Update with username that is already in use",
+			payload: &payload{
+				Id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+				Username: "isabellah",
+			},
+			expectedStatus: http.StatusConflict,
+		}, {
+			name: "Update with invalid username",
+			payload: &payload{
+				Id:       uuid.New(),
+				Username: "",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/updateUsername", "PATCH", tokens.AccessToken, test.payload)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_UpdateUserUsername(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateUsername", Middleware(), handler.UpdateUserUsername())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	for b.Loop() {
+		payload := struct {
+			Id       uuid.UUID `json:"id"`
+			Username string    `json:"username"`
+		}{
+			Id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			Username: "NewUsername",
+		}
+
+		_, requestErr := testutils.SendRequest(app, "/updateUsername", "PATCH", tokens.AccessToken, payload)
+		if requestErr != nil {
+			b.Fatalf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_UpdateUserUsername(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateUsername", Middleware(), handler.UpdateUserUsername())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add(tokens.AccessToken, []byte{}, "username")
+	f.Fuzz(func(t *testing.T, token string, id []byte, username string) {
+		token = testutils.FilterToken(token)
+		if id == nil || len(id) != 16 {
+			id = bytes.Repeat([]byte{0}, 16)
+		}
+
+		payload := struct {
+			Id       uuid.UUID `json:"id"`
+			Username string    `json:"username"`
+		}{
+			Id:       uuid.UUID(id),
+			Username: username,
+		}
+
+		_, requestErr := testutils.SendRequest(app, "/updateUsername", "PATCH", token, payload)
+		if requestErr != nil {
+			t.Fatalf("Error sending request: %v", requestErr)
+		}
+	})
+}

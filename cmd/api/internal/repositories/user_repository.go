@@ -61,6 +61,12 @@ type UserRepository interface {
 	// Returns true if the emails was updated.
 	// Returns error if the update failed.
 	UpdateUserEmail(ctx context.Context, id uuid.UUID, newEmail string) (bool, error)
+
+	// UpdateUserUsername updates the username of a specific user by id.
+	//
+	// Returns true if the username was updated.
+	// Returns error if the update failed.
+	UpdateUserUsername(ctx context.Context, id uuid.UUID, newUsername string) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -195,7 +201,7 @@ func (r *MemoryUserRepository) CheckIfUserIsActive(_ context.Context, id uuid.UU
 	return false, nil
 }
 
-func (r *MemoryUserRepository) UpdateUserEmail(ctx context.Context, id uuid.UUID, newEmail string) (bool, error) {
+func (r *MemoryUserRepository) UpdateUserEmail(_ context.Context, id uuid.UUID, newEmail string) (bool, error) {
 	indexToUpdate := -1
 	for i, u := range r.users {
 		if u.Id == id {
@@ -215,6 +221,29 @@ func (r *MemoryUserRepository) UpdateUserEmail(ctx context.Context, id uuid.UUID
 	}
 
 	r.users[indexToUpdate].Email = newEmail
+	return true, nil
+}
+
+func (r *MemoryUserRepository) UpdateUserUsername(_ context.Context, id uuid.UUID, newUsername string) (bool, error) {
+	indexToUpdate := -1
+	for i, u := range r.users {
+		if u.Id == id {
+			indexToUpdate = i
+			break
+		}
+	}
+
+	if indexToUpdate == -1 {
+		return false, nil
+	}
+
+	for i, u := range r.users {
+		if u.Username == newUsername && indexToUpdate != i {
+			return false, &pq.Error{Code: "23505"}
+		}
+	}
+
+	r.users[indexToUpdate].Username = newUsername
 	return true, nil
 }
 
@@ -392,6 +421,25 @@ func (r *PostgresUserRepository) UpdateUserEmail(ctx context.Context, id uuid.UU
 		`UPDATE users SET email = $1
              WHERE id = $2`,
 		newEmail,
+		id)
+
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rows > 0, nil
+}
+
+func (r *PostgresUserRepository) UpdateUserUsername(ctx context.Context, id uuid.UUID, newUsername string) (bool, error) {
+	result, err := r.db.ExecContext(
+		ctx,
+		`UPDATE users SET username = $1
+             WHERE id = $2`,
+		newUsername,
 		id)
 
 	if err != nil {

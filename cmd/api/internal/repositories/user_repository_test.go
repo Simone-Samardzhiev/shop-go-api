@@ -356,6 +356,40 @@ func TestMemoryUserRepository_UpdateUserEmail(t *testing.T) {
 	}
 }
 
+func TestMemoryUserRepository_UpdateUserUsername(t *testing.T) {
+	repo := memoryUserRepository(t)
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		username string
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			username: "NewUsername",
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			id:       uuid.New(),
+			username: "",
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := repo.UpdateUserUsername(context.Background(), test.id, test.username)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
 func TestPostgresUserRepository_AddUser(t *testing.T) {
 	seedUserTable(t)
 	t.Cleanup(cleanupUserTable)
@@ -702,6 +736,42 @@ func TestPostgresUserRepository_UpdateUserEmail(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result, err := userPostgresRepository.UpdateUserEmail(context.Background(), test.id, test.email)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_UpdateUserUsername(t *testing.T) {
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
+
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		username string
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			username: "NewUsername",
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			id:       uuid.New(),
+			username: "",
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := userPostgresRepository.UpdateUserUsername(context.Background(), test.id, test.username)
 			if err != nil {
 				t.Fatalf("Error updating user: %v", err)
 			}

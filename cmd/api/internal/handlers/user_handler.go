@@ -47,6 +47,9 @@ type UserHandler interface {
 
 	// UpdateUserEmail returns a handler used by admins to change the email of a user.
 	UpdateUserEmail() fiber.Handler
+
+	// UpdateUserUsername returns a handler used by admins to change the username of a user.
+	UpdateUserUsername() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -320,6 +323,40 @@ func (h *DefaultUserHandler) UpdateUserEmail() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid email", fiber.StatusBadRequest))
 		}
 		apiError := h.service.UpdateUserEmail(c.Context(), payload.Id, payload.Email)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) UpdateUserUsername() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		var payload struct {
+			Id       uuid.UUID `json:"id"`
+			Username string    `json:"username"`
+		}
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		validUsername := validate.Username(payload.Username)
+		if !validUsername {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid username", fiber.StatusBadRequest))
+		}
+
+		apiError := h.service.UpdateUserUsername(c.Context(), payload.Id, payload.Username)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
