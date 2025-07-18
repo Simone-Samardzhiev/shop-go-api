@@ -86,6 +86,7 @@ func (a *API) start() error {
 	adminGroup.Get("/usersInfoByUsername/:username", a.Handlers.UserHandler.GetUserByUsername())
 	adminGroup.Delete("/deleteUser/:id", a.Handlers.UserHandler.DeleteUser())
 	adminGroup.Patch("/forceLogout/:id", a.Handlers.UserHandler.ForceLogoutUser())
+	adminGroup.Patch("/updateEmail", a.Handlers.UserHandler.UpdateUserEmail())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }

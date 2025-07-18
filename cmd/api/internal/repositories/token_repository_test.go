@@ -108,10 +108,10 @@ func TestMemoryTokenRepository_DeleteTokenByUserId(t *testing.T) {
 }
 
 func TestPostgresTokenRepository_AddToken(t *testing.T) {
-	seedUserDatabase(t)
-	seedTokenDatabase(t)
-	t.Cleanup(cleanupTokenDatabase)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	seedTokenTable(t)
+	t.Cleanup(cleanupTokenTable)
+	t.Cleanup(cleanupUserTable)
 
 	tokens := []*models.Token{
 		{
@@ -140,10 +140,10 @@ func TestPostgresTokenRepository_AddToken(t *testing.T) {
 }
 
 func TestPostgresTokenRepository_DeleteToken(t *testing.T) {
-	seedUserDatabase(t)
-	seedTokenDatabase(t)
-	t.Cleanup(cleanupTokenDatabase)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	seedTokenTable(t)
+	t.Cleanup(cleanupTokenTable)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		name     string
@@ -180,10 +180,10 @@ func TestPostgresTokenRepository_DeleteToken(t *testing.T) {
 }
 
 func TestPostgresTokenRepository_DeleteTokenByUserId(t *testing.T) {
-	seedUserDatabase(t)
-	seedTokenDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
-	t.Cleanup(cleanupTokenDatabase)
+	seedUserTable(t)
+	seedTokenTable(t)
+	t.Cleanup(cleanupUserTable)
+	t.Cleanup(cleanupTokenTable)
 
 	tests := []struct {
 		name     string

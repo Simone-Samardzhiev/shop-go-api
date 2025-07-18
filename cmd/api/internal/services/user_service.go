@@ -66,6 +66,11 @@ type UserService interface {
 	//
 	// Returns utils.APIError if the none tokens are found, or if any error occurred.
 	ForceLogoutUser(ctx context.Context, id uuid.UUID) *utils.APIError
+
+	// UpdateUserEmail updates the email of a user by the id.
+	//
+	// Returns utils.APIError if the email is already in user or the updating fails.
+	UpdateUserEmail(ctx context.Context, id uuid.UUID, newEmail string) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -91,7 +96,7 @@ func (s *DefaultUserService) AddClient(ctx context.Context, payload *models.Regi
 		ok := errors.As(err, &pqErr)
 		if ok && pqErr.Code == "23505" {
 			return utils.NewAPIError("User email or password are already in use.", fiber.StatusConflict)
-		} else if !ok && err != nil {
+		} else if !ok {
 			return utils.InternalServerAPIError()
 		}
 	}
@@ -115,7 +120,7 @@ func (s *DefaultUserService) AddUser(ctx context.Context, payload *models.Regist
 		ok := errors.As(err, &pqErr)
 		if ok && pqErr.Code == "23505" {
 			return utils.NewAPIError("User email or password are already in use.", fiber.StatusConflict)
-		} else if !ok && err != nil {
+		} else if !ok {
 			return utils.InternalServerAPIError()
 		}
 	}
@@ -263,6 +268,23 @@ func (s *DefaultUserService) ForceLogoutUser(ctx context.Context, id uuid.UUID) 
 		return utils.NewAPIError("No tokens founds linked to user.", fiber.StatusNotFound)
 	}
 
+	return nil
+}
+
+func (s *DefaultUserService) UpdateUserEmail(ctx context.Context, id uuid.UUID, newEmail string) *utils.APIError {
+	result, err := s.userRepository.UpdateUserEmail(ctx, id, newEmail)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			return utils.NewAPIError("Email already in user", fiber.StatusConflict)
+		} else {
+			return utils.InternalServerAPIError()
+		}
+	}
+
+	if !result {
+		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	}
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"bytes"
 	"encoding/json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -1096,6 +1097,135 @@ func FuzzDefaultUserHandler_ForceLogoutUser(f *testing.F) {
 		_, requestErr := testutils.SendRequest(app, "/users/forceLogout/"+userId, "PATCH", token, nil)
 		if requestErr != nil {
 			t.Errorf("Error sending request: %v", requestErr)
+		}
+	})
+}
+
+func TestDefaultUserHandler_UpdateUserEmail(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateEmail", Middleware(), handler.UpdateUserEmail())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	type payload struct {
+		Id    uuid.UUID `json:"id"`
+		Email string    `json:"email"`
+	}
+	tests := []struct {
+		name           string
+		payload        *payload
+		expectedStatus int
+	}{
+		{
+			name: "Update email of an existing user",
+			payload: &payload{
+				Id:    uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+				Email: "NewEmail1@email.com",
+			},
+			expectedStatus: http.StatusOK,
+		}, {
+			name: "Update email of a non-existing user",
+			payload: &payload{
+				Id:    uuid.New(),
+				Email: "NewEmail2@email.com",
+			},
+			expectedStatus: http.StatusNotFound,
+		}, {
+			name: "Update with invalid email",
+			payload: &payload{
+				Id:    uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+				Email: "",
+			},
+			expectedStatus: http.StatusBadRequest,
+		}, {
+			name: "Update with email that is already in use",
+			payload: &payload{
+				Id:    uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+				Email: "jane_smith@example.com",
+			},
+			expectedStatus: http.StatusConflict,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/updateEmail", "PATCH", tokens.AccessToken, test.payload)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_UpdateUserEmail(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateEmail", Middleware(), handler.UpdateUserEmail())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	for b.Loop() {
+		payload := struct {
+			Id    uuid.UUID `json:"id"`
+			Email string    `json:"email"`
+		}{
+			Id:    uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			Email: "NewEmail@exmaple.com",
+		}
+		_, requestErr := testutils.SendRequest(app, "/updateEmail", "PATCH", tokens.AccessToken, payload)
+		if requestErr != nil {
+			b.Fatalf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_UpdateUserEmail(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateEmail", Middleware(), handler.UpdateUserEmail())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add(tokens.AccessToken, []byte{}, "email")
+	f.Fuzz(func(t *testing.T, token string, id []byte, email string) {
+		token = testutils.FilterToken(token)
+		if id == nil || len(id) != 16 {
+			id = bytes.Repeat([]byte{0}, 16)
+		}
+
+		payload := struct {
+			Id    uuid.UUID `json:"id"`
+			Email string    `json:"email"`
+		}{
+			Id:    uuid.UUID(id),
+			Email: email,
+		}
+
+		_, requestErr := testutils.SendRequest(app, "/updateEmail", "PATCH", token, payload)
+		if requestErr != nil {
+			t.Fatalf("Error sending request: %v", requestErr)
 		}
 	})
 }

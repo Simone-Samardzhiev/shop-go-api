@@ -321,9 +321,44 @@ func TestMemoryUserRepository_CheckIfUserIsActive(t *testing.T) {
 	}
 }
 
+func TestMemoryUserRepository_UpdateUserEmail(t *testing.T) {
+	repo := memoryUserRepository(t)
+
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		email    string
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			email:    "NewEmail@email.com",
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			id:       uuid.New(),
+			email:    "",
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := repo.UpdateUserEmail(context.Background(), test.id, test.email)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
 func TestPostgresUserRepository_AddUser(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		name          string
@@ -359,8 +394,8 @@ func TestPostgresUserRepository_AddUser(t *testing.T) {
 }
 
 func TestPostgresUserRepository_GetUsers(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		page          int
@@ -403,8 +438,8 @@ func TestPostgresUserRepository_GetUsers(t *testing.T) {
 }
 
 func TestPostgresUserRepository_GetUsersByRole(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		role          models.UserRole
@@ -457,8 +492,8 @@ func TestPostgresUserRepository_GetUsersByRole(t *testing.T) {
 }
 
 func TestPostgresUserRepository_GetUserByID(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		name          string
@@ -497,8 +532,8 @@ func TestPostgresUserRepository_GetUserByID(t *testing.T) {
 }
 
 func TestPostgresUserRepository_GetUserByEmail(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		name             string
@@ -536,8 +571,8 @@ func TestPostgresUserRepository_GetUserByEmail(t *testing.T) {
 }
 
 func TestPostgresUserRepository_GetUserByUsername(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		name          string
@@ -576,8 +611,8 @@ func TestPostgresUserRepository_GetUserByUsername(t *testing.T) {
 }
 
 func TestPostgresUserRepository_DeleteUser(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		name     string
@@ -609,8 +644,8 @@ func TestPostgresUserRepository_DeleteUser(t *testing.T) {
 }
 
 func TestPostgresUserRepository_CheckIfUserIsActive(t *testing.T) {
-	seedUserDatabase(t)
-	t.Cleanup(cleanupUserDatabase)
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
 
 	tests := []struct {
 		id       uuid.UUID
@@ -633,6 +668,42 @@ func TestPostgresUserRepository_CheckIfUserIsActive(t *testing.T) {
 			result, err := userPostgresRepository.CheckIfUserIsActive(context.Background(), test.id)
 			if err != nil {
 				t.Fatalf("Error checking if user is active: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_UpdateUserEmail(t *testing.T) {
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
+
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		email    string
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			email:    "NewEmail@email.com",
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			id:       uuid.New(),
+			email:    "",
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := userPostgresRepository.UpdateUserEmail(context.Background(), test.id, test.email)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
 			}
 			if result != test.expected {
 				t.Errorf("Expected %t, got %t", test.expected, result)

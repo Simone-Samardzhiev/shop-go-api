@@ -52,9 +52,15 @@ type UserRepository interface {
 
 	// CheckIfUserIsActive checks if a user with a specific id is active.
 	//
-	// Return true if the user is active.
+	// Returns true if the user is active.
 	// Returns error if there was a database error.
 	CheckIfUserIsActive(ctx context.Context, id uuid.UUID) (bool, error)
+
+	// UpdateUserEmail updates the email of a specific user by id.
+	//
+	// Returns true if the emails was updated.
+	// Returns error if the update failed.
+	UpdateUserEmail(ctx context.Context, id uuid.UUID, newEmail string) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -187,6 +193,29 @@ func (r *MemoryUserRepository) CheckIfUserIsActive(_ context.Context, id uuid.UU
 	}
 
 	return false, nil
+}
+
+func (r *MemoryUserRepository) UpdateUserEmail(ctx context.Context, id uuid.UUID, newEmail string) (bool, error) {
+	indexToUpdate := -1
+	for i, u := range r.users {
+		if u.Id == id {
+			indexToUpdate = i
+			break
+		}
+	}
+
+	if indexToUpdate == -1 {
+		return false, nil
+	}
+
+	for i, u := range r.users {
+		if u.Email == newEmail && indexToUpdate != i {
+			return false, &pq.Error{Code: "23505"}
+		}
+	}
+
+	r.users[indexToUpdate].Email = newEmail
+	return true, nil
 }
 
 // PostgresUserRepository implements UserRepository using postgres.
@@ -355,6 +384,25 @@ func (r *PostgresUserRepository) CheckIfUserIsActive(ctx context.Context, id uui
 	}
 
 	return active, err
+}
+
+func (r *PostgresUserRepository) UpdateUserEmail(ctx context.Context, id uuid.UUID, newEmail string) (bool, error) {
+	result, err := r.db.ExecContext(
+		ctx,
+		`UPDATE users SET email = $1
+             WHERE id = $2`,
+		newEmail,
+		id)
+
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rows > 0, nil
 }
 
 // NewPostgresUserRepository creates a new instance of PostgresUserRepository

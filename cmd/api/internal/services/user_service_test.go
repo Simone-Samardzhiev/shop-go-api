@@ -394,3 +394,39 @@ func TestDefaultUserService_ForceLogoutUser(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultUserService_UpdateUserEmail(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name     string
+		email    string
+		id       uuid.UUID
+		expected *utils.APIError
+	}{
+		{
+			name:     "Update a existing user",
+			email:    "NewEmail@example.com",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: nil,
+		}, {
+			name:     "Update a user with already existing email",
+			email:    "jane_smith@example.com",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			expected: utils.NewAPIError("Email already in user", fiber.StatusConflict),
+		}, {
+			name:     "Update a non-existing user",
+			email:    "",
+			id:       uuid.New(),
+			expected: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			apiError := service.UpdateUserEmail(context.Background(), test.id, test.email)
+			if !reflect.DeepEqual(apiError, test.expected) {
+				t.Errorf("Expected error %v, got %v", test.expected, apiError)
+			}
+		})
+	}
+}

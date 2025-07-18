@@ -19,7 +19,7 @@ var (
 
 // TestMain will load the .env.test file and create a connection to the test database.
 func TestMain(m *testing.M) {
-	err := godotenv.Load("./../.env.test")
+	err := godotenv.Load("./../../../../.env.test")
 	if err != nil {
 		log.Fatalf("Error loading .env.test file")
 	}
@@ -68,8 +68,8 @@ func memoryTokenRepository(t *testing.T) *repositories.MemoryTokenRepository {
 	return repo
 }
 
-// seedUserDatabase will add users to the test database.
-func seedUserDatabase(t *testing.T) {
+// seedUserTable will add users to the test database.
+func seedUserTable(t *testing.T) {
 	t.Helper()
 	err := testutils.SeedUsersTable(db)
 	if err != nil {
@@ -77,18 +77,18 @@ func seedUserDatabase(t *testing.T) {
 	}
 }
 
-// cleanupUserDatabase will truncate table users and reset the identity.
-func cleanupUserDatabase() {
+// cleanupUserTable will truncate table users and reset the identity.
+func cleanupUserTable() {
 	err := testutils.CleanupDatabase([]string{"users"}, db)
 	if err != nil {
 		log.Fatalf("Error cleaning up database: %v", err)
 	}
 }
 
-// seedTokenDatabase will add tokens to the test database.
+// seedTokenTable will add tokens to the test database.
 //
 // Note: The users must be added first, or the token adding will fail.
-func seedTokenDatabase(t *testing.T) {
+func seedTokenTable(t *testing.T) {
 	t.Helper()
 	err := testutils.SeedTokensTable(db)
 	if err != nil {
@@ -96,8 +96,8 @@ func seedTokenDatabase(t *testing.T) {
 	}
 }
 
-// cleanupTokenDatabase will truncate table tokens and reset the identity.
-func cleanupTokenDatabase() {
+// cleanupTokenTable will truncate table tokens and reset the identity.
+func cleanupTokenTable() {
 	err := testutils.CleanupDatabase([]string{"tokens"}, db)
 	if err != nil {
 		log.Fatalf("Error cleaning up database: %v", err)

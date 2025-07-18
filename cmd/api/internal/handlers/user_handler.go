@@ -7,6 +7,7 @@ import (
 	"shop/cmd/api/internal/models"
 	"shop/cmd/api/internal/services"
 	"shop/cmd/api/internal/utils"
+	"shop/cmd/api/internal/validate"
 	"strconv"
 )
 
@@ -43,6 +44,9 @@ type UserHandler interface {
 	// ForceLogoutUser returns a handler used by admins to forcibly logout user
 	// by removing all refresh tokens linked to the user.
 	ForceLogoutUser() fiber.Handler
+
+	// UpdateUserEmail returns a handler used by admins to change the email of a user.
+	UpdateUserEmail() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -283,6 +287,39 @@ func (h *DefaultUserHandler) ForceLogoutUser() fiber.Handler {
 		}
 
 		apiError := h.service.ForceLogoutUser(c.Context(), parsedId)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) UpdateUserEmail() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		var payload struct {
+			Id    uuid.UUID `json:"id"`
+			Email string    `json:"email"`
+		}
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		validEmail := validate.Email(payload.Email)
+		if !validEmail {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid email", fiber.StatusBadRequest))
+		}
+		apiError := h.service.UpdateUserEmail(c.Context(), payload.Id, payload.Email)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
