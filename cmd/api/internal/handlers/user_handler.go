@@ -53,6 +53,9 @@ type UserHandler interface {
 
 	// UpdateUserRole returns a handler used by admins to change the role of a user.
 	UpdateUserRole() fiber.Handler
+
+	// UpdateUserPassword returns a handler used by admins to change the password of a user.
+	UpdateUserPassword() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -391,6 +394,39 @@ func (h *DefaultUserHandler) UpdateUserRole() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid role", fiber.StatusBadRequest))
 		}
 		apiError := h.service.UpdateUserRole(c.Context(), payload.Id, payload.Role)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) UpdateUserPassword() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		var payload struct {
+			Id       uuid.UUID `json:"id"`
+			Password string    `json:"password"`
+		}
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+		validPassword := validate.Password(payload.Password)
+		if !validPassword {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid password", fiber.StatusBadRequest))
+		}
+
+		apiError := h.service.UpdateUserPassword(c.Context(), payload.Id, payload.Password)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}

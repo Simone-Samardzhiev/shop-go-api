@@ -81,6 +81,11 @@ type UserService interface {
 	//
 	// Returns utils.APIError if the updating fails.
 	UpdateUserRole(ctx context.Context, id uuid.UUID, newRole models.UserRole) *utils.APIError
+
+	// UpdateUserPassword updates the password of a user by the id.
+	//
+	// Returns utils.APIError if the updating fails.
+	UpdateUserPassword(ctx context.Context, id uuid.UUID, newPassword string) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -323,6 +328,22 @@ func (s *DefaultUserService) UpdateUserRole(ctx context.Context, id uuid.UUID, n
 	if !result {
 		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
 	}
+	return nil
+}
+
+func (s *DefaultUserService) UpdateUserPassword(ctx context.Context, id uuid.UUID, newPassword string) *utils.APIError {
+	hash, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return utils.InternalServerAPIError()
+	}
+	result, err := s.userRepository.UpdateUserPassword(ctx, id, hash)
+	if err != nil {
+		return utils.InternalServerAPIError()
+	}
+	if !result {
+		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+	}
+
 	return nil
 }
 

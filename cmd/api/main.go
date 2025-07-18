@@ -89,6 +89,7 @@ func (a *API) start() error {
 	adminGroup.Patch("/updateEmail", a.Handlers.UserHandler.UpdateUserEmail())
 	adminGroup.Patch("/updateUsername", a.Handlers.UserHandler.UpdateUserUsername())
 	adminGroup.Patch("/updateRole", a.Handlers.UserHandler.UpdateUserRole())
+	adminGroup.Patch("/updatePassword", a.Handlers.UserHandler.UpdateUserPassword())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }
