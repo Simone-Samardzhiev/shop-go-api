@@ -7,7 +7,6 @@ import (
 	"shop/cmd/api/internal/models"
 	"shop/cmd/api/internal/services"
 	"shop/cmd/api/internal/utils"
-	"shop/cmd/api/internal/validate"
 	"strconv"
 )
 
@@ -38,18 +37,12 @@ type UserHandler interface {
 	// GetUserByUsername returns a handler used by admins to retrieve a user's information by their username address.
 	GetUserByUsername() fiber.Handler
 
-	// UpdateUser returns a handler used by admins to update user data.
-	UpdateUser() fiber.Handler
-
 	// DeleteUser returns a handler used by admins to delete user data.
 	DeleteUser() fiber.Handler
 
 	// ForceLogoutUser returns a handler used by admins to forcibly logout user
 	// by removing all refresh tokens linked to the user.
 	ForceLogoutUser() fiber.Handler
-
-	// ChangeUserPassword returns a handler used by admins to change the password of a specific user.
-	ChangeUserPassword() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -247,32 +240,6 @@ func (h *DefaultUserHandler) GetUserByUsername() fiber.Handler {
 	}
 }
 
-func (h *DefaultUserHandler) UpdateUser() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		claims, ok := c.Locals("user").(*auth.Claims)
-		if !ok {
-			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
-		}
-		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
-			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
-		}
-
-		var payload models.UpdateUserPayload
-		err := c.BodyParser(&payload)
-		if err != nil {
-			return err
-		}
-
-		apiErr := h.service.UpdateUser(c.Context(), &payload)
-		if apiErr != nil {
-			return c.Status(apiErr.Status).JSON(apiErr)
-		}
-
-		c.Status(fiber.StatusOK)
-		return nil
-	}
-}
-
 func (h *DefaultUserHandler) DeleteUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		claims, ok := c.Locals("user").(*auth.Claims)
@@ -316,43 +283,6 @@ func (h *DefaultUserHandler) ForceLogoutUser() fiber.Handler {
 		}
 
 		apiError := h.service.ForceLogoutUser(c.Context(), parsedId)
-		if apiError != nil {
-			return c.Status(apiError.Status).JSON(apiError)
-		}
-
-		c.Status(fiber.StatusOK)
-		return nil
-	}
-}
-
-func (h *DefaultUserHandler) ChangeUserPassword() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		claims, ok := c.Locals("user").(*auth.Claims)
-		if !ok {
-			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
-		}
-		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
-			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
-		}
-
-		var payload struct {
-			Id       uuid.UUID `json:"id"`
-			Password string    `json:"password"`
-		}
-
-		err := c.BodyParser(&payload)
-		if err != nil {
-			return err
-		}
-
-		ok = validate.Password(payload.Password)
-		if !ok {
-			return c.Status(fiber.StatusBadRequest).JSON(
-				utils.NewAPIError("Invalid password", fiber.StatusBadRequest),
-			)
-		}
-
-		apiError := h.service.ChangeUserPassword(c.Context(), payload.Id, payload.Password)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}

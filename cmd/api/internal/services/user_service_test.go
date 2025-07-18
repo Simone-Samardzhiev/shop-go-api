@@ -336,41 +336,6 @@ func TestDefaultUserService_GetUserByUsername(t *testing.T) {
 	}
 }
 
-func TestDefaultUserService_UpdateUser(t *testing.T) {
-	service := DefaultUserService(t)
-
-	tests := []struct {
-		user     *models.UpdateUserPayload
-		expected *utils.APIError
-	}{
-		{
-			user:     models.NewUpdateUserPayload(uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"), "exmple_email@email.com", "NewUsername", true, models.Client),
-			expected: nil,
-		}, {
-			user:     models.NewUpdateUserPayload(uuid.MustParse("c3d4e5f6-a7b8-9012-3456-7890abcdef23"), "exmple_email@email.com", "NewUsername", false, models.Client),
-			expected: utils.NewAPIError("User email or username already in use.", fiber.StatusConflict),
-		}, {
-			user:     models.NewUpdateUserPayload(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "", "NewUsername", false, models.Client),
-			expected: utils.NewAPIError("Invalid email.", fiber.StatusBadRequest),
-		}, {
-			user:     models.NewUpdateUserPayload(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "", true, models.Client),
-			expected: utils.NewAPIError("Invalid username.", fiber.StatusBadRequest),
-		}, {
-			user:     models.NewUpdateUserPayload(uuid.MustParse("b2c3d4e5-f6a7-8901-2345-67890abcdef1"), "example@email.com", "NewUsername", true, ""),
-			expected: utils.NewAPIError("Invalid user role.", fiber.StatusBadRequest),
-		},
-	}
-
-	for i, test := range tests {
-		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
-			apiError := service.UpdateUser(context.Background(), test.user)
-			if !reflect.DeepEqual(apiError, test.expected) {
-				t.Errorf("Expected error %v, got %v", test.expected, apiError)
-			}
-		})
-	}
-}
-
 func TestDefaultUserService_DeleteUser(t *testing.T) {
 	service := DefaultUserService(t)
 	tests := []struct {
@@ -423,37 +388,6 @@ func TestDefaultUserService_ForceLogoutUser(t *testing.T) {
 	for i, test := range tests {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
 			apiError := service.ForceLogoutUser(context.Background(), test.id)
-			if !reflect.DeepEqual(apiError, test.expected) {
-				t.Errorf("Expected error %v, got %v", test.expected, apiError)
-			}
-		})
-	}
-}
-
-func TestDefaultUserService_ChangeUserPassword(t *testing.T) {
-	service := DefaultUserService(t)
-	tests := []struct {
-		name     string
-		id       uuid.UUID
-		password string
-		expected *utils.APIError
-	}{
-		{
-			name:     "Change user password with existing id",
-			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
-			password: "NewPassword1234",
-			expected: nil,
-		}, {
-			name:     "Change user password with non-existing id",
-			id:       uuid.New(),
-			password: "NewPassword1234",
-			expected: utils.NewAPIError("User not found.", fiber.StatusNotFound),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			apiError := service.ChangeUserPassword(context.Background(), test.id, test.password)
 			if !reflect.DeepEqual(apiError, test.expected) {
 				t.Errorf("Expected error %v, got %v", test.expected, apiError)
 			}

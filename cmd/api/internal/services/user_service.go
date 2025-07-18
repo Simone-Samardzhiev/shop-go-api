@@ -57,11 +57,6 @@ type UserService interface {
 	// Return the models.UserInfo if the user was found or utils.APIError if any error occurred.
 	GetUserByUsername(ctx context.Context, username string) (*models.UserInfo, *utils.APIError)
 
-	// UpdateUser used to update user data by specific id.
-	//
-	// Return utils.APIError if the user was not found or if any error occurred.
-	UpdateUser(ctx context.Context, user *models.UpdateUserPayload) *utils.APIError
-
 	// DeleteUser used to delete a user by a specific id.
 	//
 	// Return utils.APIError if the user was not found or if any error occurred.
@@ -71,11 +66,6 @@ type UserService interface {
 	//
 	// Returns utils.APIError if the none tokens are found, or if any error occurred.
 	ForceLogoutUser(ctx context.Context, id uuid.UUID) *utils.APIError
-
-	// ChangeUserPassword changes the passwords of a user with specified id.
-	//
-	// Returns utils.APIError if the user was not found, or any error occurred.
-	ChangeUserPassword(ctx context.Context, userId uuid.UUID, password string) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -252,26 +242,6 @@ func (s *DefaultUserService) GetUserByUsername(ctx context.Context, username str
 	}
 }
 
-func (s *DefaultUserService) UpdateUser(ctx context.Context, user *models.UpdateUserPayload) *utils.APIError {
-	if err := user.Validate(); err != nil {
-		return utils.NewAPIErrorFromError(err, fiber.StatusBadRequest)
-	}
-
-	result, err := s.userRepository.UpdateUser(ctx, user)
-	var pqErr *pq.Error
-	ok := errors.As(err, &pqErr)
-	if ok && pqErr.Code == "23505" {
-		return utils.NewAPIError("User email or username already in use.", fiber.StatusConflict)
-	} else if !ok && err != nil {
-		return utils.InternalServerAPIError()
-	}
-	if !result {
-		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
-	}
-
-	return nil
-}
-
 func (s *DefaultUserService) DeleteUser(ctx context.Context, id uuid.UUID) *utils.APIError {
 	result, err := s.userRepository.DeleteUser(ctx, id)
 	if err != nil {
@@ -291,23 +261,6 @@ func (s *DefaultUserService) ForceLogoutUser(ctx context.Context, id uuid.UUID) 
 	}
 	if !result {
 		return utils.NewAPIError("No tokens founds linked to user.", fiber.StatusNotFound)
-	}
-
-	return nil
-}
-
-func (s *DefaultUserService) ChangeUserPassword(ctx context.Context, userId uuid.UUID, password string) *utils.APIError {
-	hash, err := auth.HashPassword(password)
-	if err != nil {
-		return utils.InternalServerAPIError()
-	}
-
-	result, err := s.userRepository.ChangePassword(ctx, userId, hash)
-	if err != nil {
-		return utils.InternalServerAPIError()
-	}
-	if !result {
-		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
 	}
 
 	return nil

@@ -44,11 +44,6 @@ type UserRepository interface {
 	// Returns an error if a user with the specified username doesn't exist or there was a database error.
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
 
-	// UpdateUser updates user data.
-	//
-	// Returns true if the user was found and updated.
-	UpdateUser(ctx context.Context, user *models.UpdateUserPayload) (bool, error)
-
 	// DeleteUser deletes a user with a specific id.
 	//
 	// Returns true if the user was deleted or false if the user was not found.
@@ -60,12 +55,6 @@ type UserRepository interface {
 	// Return true if the user is active.
 	// Returns error if there was a database error.
 	CheckIfUserIsActive(ctx context.Context, id uuid.UUID) (bool, error)
-
-	// ChangePassword changes the password of a user with a specific id.
-	//
-	// Returns true if the password was updated, or false if the use was not found.
-	// Returns error if there was a database error.
-	ChangePassword(ctx context.Context, id uuid.UUID, password string) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -179,34 +168,6 @@ func (r *MemoryUserRepository) GetUserByUsername(_ context.Context, username str
 	return nil, sql.ErrNoRows
 }
 
-func (r *MemoryUserRepository) UpdateUser(_ context.Context, user *models.UpdateUserPayload) (bool, error) {
-	indexToUpdate := -1
-	for i, u := range r.users {
-		if u.Id == user.Id {
-			indexToUpdate = i
-			break
-		}
-	}
-
-	if indexToUpdate == -1 {
-		return false, nil
-	}
-
-	for i, u := range r.users {
-		if (u.Email == user.Email || u.Username == user.Username) && indexToUpdate != i {
-			return false, &pq.Error{
-				Code: "23505",
-			}
-		}
-	}
-
-	r.users[indexToUpdate].Email = user.Email
-	r.users[indexToUpdate].Username = user.Username
-	r.users[indexToUpdate].Role = user.Role
-	r.users[indexToUpdate].Active = user.Active
-	return true, nil
-}
-
 func (r *MemoryUserRepository) DeleteUser(_ context.Context, id uuid.UUID) (bool, error) {
 	for i, u := range r.users {
 		if u.Id == id {
@@ -225,16 +186,6 @@ func (r *MemoryUserRepository) CheckIfUserIsActive(_ context.Context, id uuid.UU
 		}
 	}
 
-	return false, nil
-}
-
-func (r *MemoryUserRepository) ChangePassword(_ context.Context, id uuid.UUID, password string) (bool, error) {
-	for _, u := range r.users {
-		if u.Id == id {
-			u.Password = password
-			return true, nil
-		}
-	}
 	return false, nil
 }
 
@@ -376,30 +327,6 @@ func (r *PostgresUserRepository) GetUserByUsername(ctx context.Context, username
 	return &user, err
 }
 
-func (r *PostgresUserRepository) UpdateUser(ctx context.Context, user *models.UpdateUserPayload) (bool, error) {
-	result, err := r.db.ExecContext(
-		ctx,
-		`UPDATE users 
-		SET email = $1, username = $2, user_role = $3, active = $4
-		WHERE id = $5`,
-		user.Email,
-		user.Username,
-		user.Role,
-		user.Active,
-		user.Id,
-	)
-
-	if err != nil {
-		return false, err
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return false, err
-	}
-	return rows > 0, nil
-}
-
 func (r *PostgresUserRepository) DeleteUser(ctx context.Context, id uuid.UUID) (bool, error) {
 	result, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
 	if err != nil {
@@ -428,26 +355,6 @@ func (r *PostgresUserRepository) CheckIfUserIsActive(ctx context.Context, id uui
 	}
 
 	return active, err
-}
-
-func (r *PostgresUserRepository) ChangePassword(ctx context.Context, id uuid.UUID, password string) (bool, error) {
-	result, err := r.db.ExecContext(
-		ctx,
-		`UPDATE users 
-		SET password = $1
-		WHERE id = $2`,
-		password,
-		id,
-	)
-	if err != nil {
-		return false, err
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return false, err
-	}
-	return rows > 0, nil
 }
 
 // NewPostgresUserRepository creates a new instance of PostgresUserRepository
