@@ -1360,3 +1360,126 @@ func FuzzDefaultUserHandler_UpdateUserUsername(f *testing.F) {
 		}
 	})
 }
+
+func TestDefaultUserHandler_UpdateUserRole(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateUserRole", Middleware(), handler.UpdateUserRole())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		t.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	type payload struct {
+		Id   uuid.UUID       `json:"id"`
+		Role models.UserRole `json:"role"`
+	}
+	tests := []struct {
+		name           string
+		payload        *payload
+		expectedStatus int
+	}{
+		{
+			name: "Update username of an existing user",
+			payload: &payload{
+				Id:   uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+				Role: models.Admin,
+			},
+			expectedStatus: http.StatusOK,
+		}, {
+			name: "Update username of an non-existing user",
+			payload: &payload{
+				Id:   uuid.New(),
+				Role: models.Admin,
+			},
+			expectedStatus: http.StatusNotFound,
+		}, {
+			name: "Update with invalid role",
+			payload: &payload{
+				Id:   uuid.New(),
+				Role: "",
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/updateUserRole", "PATCH", tokens.AccessToken, test.payload)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_UpdateUserRole(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateUserRole", Middleware(), handler.UpdateUserRole())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		b.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	for b.Loop() {
+		payload := struct {
+			Id   uuid.UUID       `json:"id"`
+			Role models.UserRole `json:"role"`
+		}{
+			Id:   uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			Role: models.Admin,
+		}
+
+		_, requestError := testutils.SendRequest(app, "/updateUserRole", "PATCH", tokens.AccessToken, payload)
+		if requestError != nil {
+			b.Fatalf("Error sending request: %v", requestError)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_UpdateUserRole(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+
+	app := fiber.New()
+	app.Post("/login", handler.Login())
+	app.Patch("/updateUserRole", Middleware(), handler.UpdateUserRole())
+	tokens, err := testutils.LoginAsAdmin(app, "/login")
+	if err != nil {
+		f.Fatalf("Error logging in as admin: %v", err)
+	}
+
+	f.Add(tokens.AccessToken, []byte{}, "role")
+	f.Fuzz(func(t *testing.T, token string, id []byte, role models.UserRole) {
+		token = testutils.FilterToken(token)
+		if id == nil || len(id) != 16 {
+			id = bytes.Repeat([]byte{0}, 16)
+		}
+		payload := struct {
+			Id   uuid.UUID       `json:"id"`
+			Role models.UserRole `json:"role"`
+		}{
+			Id:   uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			Role: models.Admin,
+		}
+
+		_, requestError := testutils.SendRequest(app, "/updateUserRole", "PATCH", token, payload)
+		if requestError != nil {
+			t.Fatalf("Error sending request: %v", requestError)
+		}
+	})
+}

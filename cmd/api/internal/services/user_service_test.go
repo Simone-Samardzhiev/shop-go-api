@@ -466,3 +466,34 @@ func TestDefaultUserService_UpdateUserUsername(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultUserService_UpdateUserRole(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		role     models.UserRole
+		expected *utils.APIError
+	}{
+		{
+			name:     "Update a existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			role:     models.Admin,
+			expected: nil,
+		}, {
+			name:     "Update a non-existing user",
+			id:       uuid.New(),
+			role:     models.Admin,
+			expected: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			apiError := service.UpdateUserRole(context.Background(), test.id, test.role)
+			if !reflect.DeepEqual(apiError, test.expected) {
+				t.Errorf("Expected error %v, got %v", test.expected, apiError)
+			}
+		})
+	}
+}

@@ -390,6 +390,40 @@ func TestMemoryUserRepository_UpdateUserUsername(t *testing.T) {
 	}
 }
 
+func TestMemoryUserRepository_UpdateUserRole(t *testing.T) {
+	repo := memoryUserRepository(t)
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		role     string
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			role:     models.Admin,
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			id:       uuid.New(),
+			role:     models.Admin,
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := repo.UpdateUserRole(context.Background(), test.id, test.role)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
 func TestPostgresUserRepository_AddUser(t *testing.T) {
 	seedUserTable(t)
 	t.Cleanup(cleanupUserTable)
@@ -772,6 +806,42 @@ func TestPostgresUserRepository_UpdateUserUsername(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result, err := userPostgresRepository.UpdateUserUsername(context.Background(), test.id, test.username)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_UpdateUserRole(t *testing.T) {
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
+
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		role     string
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			role:     models.Admin,
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			id:       uuid.New(),
+			role:     models.Admin,
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := userPostgresRepository.UpdateUserRole(context.Background(), test.id, test.role)
 			if err != nil {
 				t.Fatalf("Error updating user: %v", err)
 			}

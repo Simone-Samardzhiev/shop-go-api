@@ -67,6 +67,12 @@ type UserRepository interface {
 	// Returns true if the username was updated.
 	// Returns error if the update failed.
 	UpdateUserUsername(ctx context.Context, id uuid.UUID, newUsername string) (bool, error)
+
+	// UpdateUserRole updates the role of a specific user by id.
+	//
+	// Returns true if the role was updated.
+	// Returns error if the update failed.
+	UpdateUserRole(ctx context.Context, id uuid.UUID, newRole models.UserRole) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -245,6 +251,17 @@ func (r *MemoryUserRepository) UpdateUserUsername(_ context.Context, id uuid.UUI
 
 	r.users[indexToUpdate].Username = newUsername
 	return true, nil
+}
+
+func (r *MemoryUserRepository) UpdateUserRole(_ context.Context, id uuid.UUID, newRole models.UserRole) (bool, error) {
+	for _, u := range r.users {
+		if u.Id == id {
+			u.Role = newRole
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // PostgresUserRepository implements UserRepository using postgres.
@@ -440,6 +457,25 @@ func (r *PostgresUserRepository) UpdateUserUsername(ctx context.Context, id uuid
 		`UPDATE users SET username = $1
              WHERE id = $2`,
 		newUsername,
+		id)
+
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rows > 0, nil
+}
+
+func (r *PostgresUserRepository) UpdateUserRole(ctx context.Context, id uuid.UUID, newRole models.UserRole) (bool, error) {
+	result, err := r.db.ExecContext(
+		ctx,
+		`UPDATE users SET user_role = $1
+             WHERE id = $2`,
+		newRole,
 		id)
 
 	if err != nil {

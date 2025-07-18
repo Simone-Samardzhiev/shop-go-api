@@ -88,6 +88,7 @@ func (a *API) start() error {
 	adminGroup.Patch("/forceLogout/:id", a.Handlers.UserHandler.ForceLogoutUser())
 	adminGroup.Patch("/updateEmail", a.Handlers.UserHandler.UpdateUserEmail())
 	adminGroup.Patch("/updateUsername", a.Handlers.UserHandler.UpdateUserUsername())
+	adminGroup.Patch("/updateRole", a.Handlers.UserHandler.UpdateUserRole())
 
 	return app.Listen(a.Conf.ApiConfig.ServerAddr)
 }
