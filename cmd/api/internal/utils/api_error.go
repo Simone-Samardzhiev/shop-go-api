@@ -35,3 +35,8 @@ func InternalServerAPIError() *APIError {
 func InvalidTokenAPIError() *APIError {
 	return &APIError{"Invalid token.", fiber.StatusUnauthorized}
 }
+
+// TooManyRequestsAPIError is the standard way of return in too many request send over time.
+func TooManyRequestsAPIError() *APIError {
+	return &APIError{"Too many requests.", fiber.StatusTooManyRequests}
+}

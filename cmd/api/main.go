@@ -3,6 +3,7 @@ package main
 import (
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
@@ -16,6 +17,7 @@ import (
 	"shop/cmd/api/internal/repositories"
 	"shop/cmd/api/internal/services"
 	"shop/cmd/api/internal/utils"
+	"time"
 )
 
 // API struct contains the application.
@@ -34,7 +36,17 @@ func (a *API) start() error {
 		app.Use(logger.New())
 	}
 
-	api := app.Group("/API/v1")
+	api := app.Group("/api/v1")
+	if !a.Conf.ApiConfig.IsDebug {
+		api.Use(limiter.New(limiter.Config{
+			Max:        20,
+			Expiration: 1 * time.Minute,
+			LimitReached: func(c *fiber.Ctx) error {
+				return c.JSON(utils.TooManyRequestsAPIError())
+			},
+		}))
+	}
+
 	middleware := jwtware.New(jwtware.Config{
 		Claims: &auth.Claims{},
 		SigningKey: jwtware.SigningKey{
@@ -53,6 +65,13 @@ func (a *API) start() error {
 
 	// Group related to authentication.
 	authGroup := api.Group("/auth")
+	authGroup.Use(limiter.New(limiter.Config{
+		Max:        3,
+		Expiration: 1 * time.Minute,
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(http.StatusTooManyRequests).JSON(utils.TooManyRequestsAPIError())
+		},
+	}))
 	authGroup.Post("/register", a.Handlers.UserHandler.RegisterClient())
 	authGroup.Post("/login", a.Handlers.UserHandler.Login())
 	authGroup.Get("/refresh", middleware, a.Handlers.UserHandler.RefreshSession())
