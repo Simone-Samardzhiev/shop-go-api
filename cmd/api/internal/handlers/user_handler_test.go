@@ -1017,7 +1017,7 @@ func TestDefaultUserHandler_ForceLogoutUser(t *testing.T) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/users/forceLogout/:id", Middleware(), handler.ForceLogoutUser())
+	app.Patch("/users/force-logout/:id", Middleware(), handler.ForceLogoutUser())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		t.Fatalf("Error logging in as admin: %v", err)
@@ -1041,7 +1041,7 @@ func TestDefaultUserHandler_ForceLogoutUser(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, requestErr := testutils.SendRequest(app, "/users/forceLogout/"+test.userId.String(), "PATCH", tokens.AccessToken, nil)
+			res, requestErr := testutils.SendRequest(app, "/users/force-logout/"+test.userId.String(), "PATCH", tokens.AccessToken, nil)
 			if requestErr != nil {
 				t.Fatalf("Error sending request: %v", requestErr)
 			}
@@ -1059,7 +1059,7 @@ func BenchmarkDefaultUserHandler_ForceLogoutUser(b *testing.B) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/users/forceLogout/:id", Middleware(), handler.ForceLogoutUser())
+	app.Patch("/users/force-logout/:id", Middleware(), handler.ForceLogoutUser())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		b.Fatalf("Error logging in as admin: %v", err)
@@ -1067,7 +1067,7 @@ func BenchmarkDefaultUserHandler_ForceLogoutUser(b *testing.B) {
 	id := uuid.New().String()
 
 	for b.Loop() {
-		_, requestErr := testutils.SendRequest(app, "/users/forceLogout/"+id, "POST", tokens.AccessToken, nil)
+		_, requestErr := testutils.SendRequest(app, "/users/force-logout/"+id, "POST", tokens.AccessToken, nil)
 
 		if requestErr != nil {
 			b.Fatalf("Error sending request: %v", requestErr)
@@ -1082,7 +1082,7 @@ func FuzzDefaultUserHandler_ForceLogoutUser(f *testing.F) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/users/forceLogout/:id", Middleware(), handler.ForceLogoutUser())
+	app.Patch("/users/force-logout/:id", Middleware(), handler.ForceLogoutUser())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		f.Fatalf("Error logging in as admin: %v", err)
@@ -1094,7 +1094,7 @@ func FuzzDefaultUserHandler_ForceLogoutUser(f *testing.F) {
 	f.Fuzz(func(t *testing.T, token string, userId string) {
 		token = testutils.FilterToken(token)
 		userId = testutils.FilterPathValue(userId)
-		_, requestErr := testutils.SendRequest(app, "/users/forceLogout/"+userId, "PATCH", token, nil)
+		_, requestErr := testutils.SendRequest(app, "/users/force-logout/"+userId, "PATCH", token, nil)
 		if requestErr != nil {
 			t.Errorf("Error sending request: %v", requestErr)
 		}
@@ -1108,7 +1108,7 @@ func TestDefaultUserHandler_UpdateUserEmail(t *testing.T) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateEmail", Middleware(), handler.UpdateUserEmail())
+	app.Patch("/update-email", Middleware(), handler.UpdateUserEmail())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		t.Fatalf("Error logging in as admin: %v", err)
@@ -1156,7 +1156,7 @@ func TestDefaultUserHandler_UpdateUserEmail(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, requestErr := testutils.SendRequest(app, "/updateEmail", "PATCH", tokens.AccessToken, test.payload)
+			res, requestErr := testutils.SendRequest(app, "/update-email", "PATCH", tokens.AccessToken, test.payload)
 			if requestErr != nil {
 				t.Fatalf("Error sending request: %v", requestErr)
 			}
@@ -1174,7 +1174,7 @@ func BenchmarkDefaultUserHandler_UpdateUserEmail(b *testing.B) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateEmail", Middleware(), handler.UpdateUserEmail())
+	app.Patch("/update-email", Middleware(), handler.UpdateUserEmail())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		b.Fatalf("Error logging in as admin: %v", err)
@@ -1188,7 +1188,7 @@ func BenchmarkDefaultUserHandler_UpdateUserEmail(b *testing.B) {
 			Id:    uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
 			Email: "NewEmail@exmaple.com",
 		}
-		_, requestErr := testutils.SendRequest(app, "/updateEmail", "PATCH", tokens.AccessToken, payload)
+		_, requestErr := testutils.SendRequest(app, "/update-email", "PATCH", tokens.AccessToken, payload)
 		if requestErr != nil {
 			b.Fatalf("Error sending request: %v", requestErr)
 		}
@@ -1202,7 +1202,7 @@ func FuzzDefaultUserHandler_UpdateUserEmail(f *testing.F) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateEmail", Middleware(), handler.UpdateUserEmail())
+	app.Patch("/update-email", Middleware(), handler.UpdateUserEmail())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		f.Fatalf("Error logging in as admin: %v", err)
@@ -1237,7 +1237,7 @@ func TestDefaultUserHandler_UpdateUserUsername(t *testing.T) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateUsername", Middleware(), handler.UpdateUserUsername())
+	app.Patch("/update-username", Middleware(), handler.UpdateUserUsername())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		t.Fatalf("Error logging in as admin: %v", err)
@@ -1285,7 +1285,7 @@ func TestDefaultUserHandler_UpdateUserUsername(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, requestErr := testutils.SendRequest(app, "/updateUsername", "PATCH", tokens.AccessToken, test.payload)
+			res, requestErr := testutils.SendRequest(app, "/update-username", "PATCH", tokens.AccessToken, test.payload)
 			if requestErr != nil {
 				t.Fatalf("Error sending request: %v", requestErr)
 			}
@@ -1303,7 +1303,7 @@ func BenchmarkDefaultUserHandler_UpdateUserUsername(b *testing.B) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateUsername", Middleware(), handler.UpdateUserUsername())
+	app.Patch("/update-username", Middleware(), handler.UpdateUserUsername())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		b.Fatalf("Error logging in as admin: %v", err)
@@ -1318,7 +1318,7 @@ func BenchmarkDefaultUserHandler_UpdateUserUsername(b *testing.B) {
 			Username: "NewUsername",
 		}
 
-		_, requestErr := testutils.SendRequest(app, "/updateUsername", "PATCH", tokens.AccessToken, payload)
+		_, requestErr := testutils.SendRequest(app, "/update-username", "PATCH", tokens.AccessToken, payload)
 		if requestErr != nil {
 			b.Fatalf("Error sending request: %v", requestErr)
 		}
@@ -1333,7 +1333,7 @@ func FuzzDefaultUserHandler_UpdateUserUsername(f *testing.F) {
 
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateUsername", Middleware(), handler.UpdateUserUsername())
+	app.Patch("/update-username", Middleware(), handler.UpdateUserUsername())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		f.Fatalf("Error logging in as admin: %v", err)
@@ -1354,7 +1354,7 @@ func FuzzDefaultUserHandler_UpdateUserUsername(f *testing.F) {
 			Username: username,
 		}
 
-		_, requestErr := testutils.SendRequest(app, "/updateUsername", "PATCH", token, payload)
+		_, requestErr := testutils.SendRequest(app, "/update-username", "PATCH", token, payload)
 		if requestErr != nil {
 			t.Fatalf("Error sending request: %v", requestErr)
 		}
@@ -1368,7 +1368,7 @@ func TestDefaultUserHandler_UpdateUserRole(t *testing.T) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateUserRole", Middleware(), handler.UpdateUserRole())
+	app.Patch("/update-user-role", Middleware(), handler.UpdateUserRole())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		t.Fatalf("Error logging in as admin: %v", err)
@@ -1409,7 +1409,7 @@ func TestDefaultUserHandler_UpdateUserRole(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, requestErr := testutils.SendRequest(app, "/updateUserRole", "PATCH", tokens.AccessToken, test.payload)
+			res, requestErr := testutils.SendRequest(app, "/update-user-role", "PATCH", tokens.AccessToken, test.payload)
 			if requestErr != nil {
 				t.Fatalf("Error sending request: %v", requestErr)
 			}
@@ -1427,7 +1427,7 @@ func BenchmarkDefaultUserHandler_UpdateUserRole(b *testing.B) {
 	}
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateUserRole", Middleware(), handler.UpdateUserRole())
+	app.Patch("/update-user-role", Middleware(), handler.UpdateUserRole())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		b.Fatalf("Error logging in as admin: %v", err)
@@ -1442,7 +1442,7 @@ func BenchmarkDefaultUserHandler_UpdateUserRole(b *testing.B) {
 			Role: models.Admin,
 		}
 
-		_, requestError := testutils.SendRequest(app, "/updateUserRole", "PATCH", tokens.AccessToken, payload)
+		_, requestError := testutils.SendRequest(app, "/update-user-role", "PATCH", tokens.AccessToken, payload)
 		if requestError != nil {
 			b.Fatalf("Error sending request: %v", requestError)
 		}
@@ -1457,7 +1457,7 @@ func FuzzDefaultUserHandler_UpdateUserRole(f *testing.F) {
 
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateUserRole", Middleware(), handler.UpdateUserRole())
+	app.Patch("/update-user-role", Middleware(), handler.UpdateUserRole())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		f.Fatalf("Error logging in as admin: %v", err)
@@ -1477,7 +1477,7 @@ func FuzzDefaultUserHandler_UpdateUserRole(f *testing.F) {
 			Role: models.Admin,
 		}
 
-		_, requestError := testutils.SendRequest(app, "/updateUserRole", "PATCH", token, payload)
+		_, requestError := testutils.SendRequest(app, "/update-user-role", "PATCH", token, payload)
 		if requestError != nil {
 			t.Fatalf("Error sending request: %v", requestError)
 		}
@@ -1492,7 +1492,7 @@ func TestDefaultUserHandler_UpdateUserPassword(t *testing.T) {
 
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateUserPassword", Middleware(), handler.UpdateUserPassword())
+	app.Patch("/update-user-password", Middleware(), handler.UpdateUserPassword())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		t.Fatalf("Error logging in as admin: %v", err)
@@ -1533,7 +1533,7 @@ func TestDefaultUserHandler_UpdateUserPassword(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, requestErr := testutils.SendRequest(app, "/updateUserPassword", "PATCH", tokens.AccessToken, test.payload)
+			res, requestErr := testutils.SendRequest(app, "/update-user-password", "PATCH", tokens.AccessToken, test.payload)
 			if requestErr != nil {
 				t.Fatalf("Error sending request: %v", requestErr)
 			}
@@ -1554,7 +1554,7 @@ func BenchmarkDefaultUserHandler_UpdateUserPassword(b *testing.B) {
 
 	app := fiber.New()
 	app.Post("/login", handler.Login())
-	app.Patch("/updateUserPassword", Middleware(), handler.UpdateUserPassword())
+	app.Patch("/update-user-password", Middleware(), handler.UpdateUserPassword())
 	tokens, err := testutils.LoginAsAdmin(app, "/login")
 	if err != nil {
 		b.Fatalf("Error logging in as admin: %v", err)
@@ -1569,7 +1569,7 @@ func BenchmarkDefaultUserHandler_UpdateUserPassword(b *testing.B) {
 			Password: "NewPassword_123",
 		}
 
-		_, requestErr := testutils.SendRequest(app, "/updateUserPassword", "PATCH", tokens.AccessToken, payload)
+		_, requestErr := testutils.SendRequest(app, "/update-user-password", "PATCH", tokens.AccessToken, payload)
 		if requestErr != nil {
 			b.Fatalf("Error sending request: %v", requestErr)
 		}
@@ -1605,7 +1605,7 @@ func FuzzDefaultUserHandler_UpdateUserPassword(f *testing.F) {
 			Password: password,
 		}
 
-		_, requestErr := testutils.SendRequest(app, "/updateUserPassword", "PATCH", token, payload)
+		_, requestErr := testutils.SendRequest(app, "/update-user-password", "PATCH", token, payload)
 		if requestErr != nil {
 			t.Fatalf("Error sending request: %v", requestErr)
 		}
