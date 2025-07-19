@@ -458,6 +458,40 @@ func TestMemoryUserRepository_UpdateUserPassword(t *testing.T) {
 	}
 }
 
+func TestMemoryUserRepository_UpdateUserStatus(t *testing.T) {
+	repo := memoryUserRepository(t)
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		status   bool
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			status:   true,
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			id:       uuid.New(),
+			status:   false,
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := repo.UpdateUserActivationStatus(context.Background(), test.id, test.status)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
 func TestPostgresUserRepository_AddUser(t *testing.T) {
 	seedUserTable(t)
 	t.Cleanup(cleanupUserTable)
@@ -912,6 +946,41 @@ func TestPostgresUserRepository_UpdateUserPassword(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result, err := userPostgresRepository.UpdateUserPassword(context.Background(), test.id, test.password)
+			if err != nil {
+				t.Fatalf("Error updating user: %v", err)
+			}
+			if result != test.expected {
+				t.Errorf("Expected %t, got %t", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestPostgresUserRepository_UpdateUserStatus(t *testing.T) {
+	seedUserTable(t)
+	t.Cleanup(cleanupUserTable)
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		status   bool
+		expected bool
+	}{
+		{
+			name:     "Update existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			status:   true,
+			expected: true,
+		}, {
+			name:     "Update non-existing user",
+			id:       uuid.New(),
+			status:   false,
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := userPostgresRepository.UpdateUserActivationStatus(context.Background(), test.id, test.status)
 			if err != nil {
 				t.Fatalf("Error updating user: %v", err)
 			}

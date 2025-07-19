@@ -56,6 +56,9 @@ type UserHandler interface {
 
 	// UpdateUserPassword returns a handler used by admins to change the password of a user.
 	UpdateUserPassword() fiber.Handler
+
+	// UpdateUserActivationStatus returns a handler used by admins to change the activation status of a user.
+	UpdateUserActivationStatus() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -427,6 +430,35 @@ func (h *DefaultUserHandler) UpdateUserPassword() fiber.Handler {
 		}
 
 		apiError := h.service.UpdateUserPassword(c.Context(), payload.Id, payload.Password)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) UpdateUserActivationStatus() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		claims, ok := c.Locals("user").(*auth.Claims)
+		if !ok {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.InternalServerAPIError())
+		}
+		if claims.Role != models.Admin || claims.TokenType != auth.AccessToken {
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.InvalidTokenAPIError())
+		}
+
+		var payload struct {
+			Id     uuid.UUID `json:"id"`
+			Status bool      `json:"status"`
+		}
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		apiError := h.service.UpdateUserActivationStatus(c.Context(), payload.Id, payload.Status)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}

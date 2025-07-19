@@ -256,10 +256,10 @@ func TestDefaultUserService_GetUserByID(t *testing.T) {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
 			result, err := service.GetUserById(context.Background(), test.id)
 
-			if test.expectedEmail == "" && !reflect.DeepEqual(err, utils.NewAPIError("User not found.", fiber.StatusNotFound)) {
-				t.Errorf("Expected error %v, got %v", *utils.NewAPIError("User not found.", fiber.StatusNotFound), err)
+			if test.expectedEmail == "" && !reflect.DeepEqual(err, utils.UserNotFoundAPIError()) {
+				t.Errorf("Expected error %v, got %v", *utils.UserNotFoundAPIError(), err)
 				return
-			} else if test.expectedEmail == "" && reflect.DeepEqual(err, utils.NewAPIError("User not found.", fiber.StatusNotFound)) {
+			} else if test.expectedEmail == "" && reflect.DeepEqual(err, utils.UserNotFoundAPIError()) {
 				return
 			}
 
@@ -287,7 +287,7 @@ func TestDefaultUserService_GetUserByEmail(t *testing.T) {
 			name:             "Get user with non-existing username",
 			email:            "",
 			expectedUsername: "",
-			expectedError:    utils.NewAPIError("User not found.", fiber.StatusNotFound),
+			expectedError:    utils.UserNotFoundAPIError(),
 		},
 	}
 
@@ -320,7 +320,7 @@ func TestDefaultUserService_GetUserByUsername(t *testing.T) {
 			name:          "Get user with non-existing username",
 			username:      "",
 			expectedEmail: "",
-			expectedError: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+			expectedError: utils.UserNotFoundAPIError(),
 		},
 	}
 
@@ -417,7 +417,7 @@ func TestDefaultUserService_UpdateUserEmail(t *testing.T) {
 			name:     "Update a non-existing user",
 			email:    "",
 			id:       uuid.New(),
-			expected: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+			expected: utils.UserNotFoundAPIError(),
 		},
 	}
 
@@ -453,7 +453,7 @@ func TestDefaultUserService_UpdateUserUsername(t *testing.T) {
 			name:     "Update a non-existing user",
 			username: "",
 			id:       uuid.New(),
-			expected: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+			expected: utils.UserNotFoundAPIError(),
 		},
 	}
 
@@ -484,7 +484,7 @@ func TestDefaultUserService_UpdateUserRole(t *testing.T) {
 			name:     "Update a non-existing user",
 			id:       uuid.New(),
 			role:     models.Admin,
-			expected: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+			expected: utils.UserNotFoundAPIError(),
 		},
 	}
 
@@ -515,13 +515,44 @@ func TestDefaultUserService_UpdateUserPassword(t *testing.T) {
 			name:     "Update a non-existing user",
 			id:       uuid.New(),
 			password: "",
-			expected: utils.NewAPIError("User not found.", fiber.StatusNotFound),
+			expected: utils.UserNotFoundAPIError(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			apiError := service.UpdateUserPassword(context.Background(), test.id, test.password)
+			if !reflect.DeepEqual(apiError, test.expected) {
+				t.Errorf("Expected error %v, got %v", test.expected, apiError)
+			}
+		})
+	}
+}
+
+func TestDefaultUserService_UpdateUserStatus(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		status   bool
+		expected *utils.APIError
+	}{
+		{
+			name:     "Update a existing user",
+			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
+			status:   true,
+			expected: nil,
+		}, {
+			name:     "Update a non-existing user",
+			id:       uuid.New(),
+			status:   false,
+			expected: utils.UserNotFoundAPIError(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			apiError := service.UpdateUserActivationStatus(context.Background(), test.id, test.status)
 			if !reflect.DeepEqual(apiError, test.expected) {
 				t.Errorf("Expected error %v, got %v", test.expected, apiError)
 			}

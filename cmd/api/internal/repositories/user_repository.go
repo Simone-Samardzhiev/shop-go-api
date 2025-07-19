@@ -73,6 +73,18 @@ type UserRepository interface {
 	// Returns true if the role was updated.
 	// Returns error if the update failed.
 	UpdateUserRole(ctx context.Context, id uuid.UUID, newRole models.UserRole) (bool, error)
+
+	// UpdateUserPassword updates the role of a specific user by id.
+	//
+	// Returns true if the password was updated.
+	// Returns error if the update failed.
+	UpdateUserPassword(ctx context.Context, id uuid.UUID, newPassword string) (bool, error)
+
+	// UpdateUserActivationStatus updates the activation status of a specific user by id.
+	//
+	// Returns true if the status was updated.
+	// Returns error if the update failed.
+	UpdateUserActivationStatus(ctx context.Context, id uuid.UUID, newStatus bool) (bool, error)
 }
 
 // MemoryUserRepository implements UserRepository with a slice of users.
@@ -257,6 +269,27 @@ func (r *MemoryUserRepository) UpdateUserRole(_ context.Context, id uuid.UUID, n
 	for _, u := range r.users {
 		if u.Id == id {
 			u.Role = newRole
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (r *MemoryUserRepository) UpdateUserPassword(_ context.Context, id uuid.UUID, newPassword string) (bool, error) {
+	for _, u := range r.users {
+		if u.Id == id {
+			u.Password = newPassword
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *MemoryUserRepository) UpdateUserActivationStatus(_ context.Context, id uuid.UUID, newStatus bool) (bool, error) {
+	for _, u := range r.users {
+		if u.Id == id {
+			u.Active = newStatus
 			return true, nil
 		}
 	}
@@ -476,6 +509,44 @@ func (r *PostgresUserRepository) UpdateUserRole(ctx context.Context, id uuid.UUI
 		`UPDATE users SET user_role = $1
              WHERE id = $2`,
 		newRole,
+		id)
+
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rows > 0, nil
+}
+
+func (r *PostgresUserRepository) UpdateUserPassword(ctx context.Context, id uuid.UUID, newPassword string) (bool, error) {
+	result, err := r.db.ExecContext(
+		ctx,
+		`UPDATE users SET password = $1
+             WHERE id = $2`,
+		newPassword,
+		id)
+
+	if err != nil {
+		return false, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rows > 0, nil
+}
+
+func (r *PostgresUserRepository) UpdateUserActivationStatus(ctx context.Context, id uuid.UUID, newStatus bool) (bool, error) {
+	result, err := r.db.ExecContext(
+		ctx,
+		`UPDATE users SET active = $1
+             WHERE id = $2`,
+		newStatus,
 		id)
 
 	if err != nil {

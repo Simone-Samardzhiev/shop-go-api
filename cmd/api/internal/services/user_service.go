@@ -86,6 +86,11 @@ type UserService interface {
 	//
 	// Returns utils.APIError if the updating fails.
 	UpdateUserPassword(ctx context.Context, id uuid.UUID, newPassword string) *utils.APIError
+
+	// UpdateUserActivationStatus updates the activation status of a user by the id.
+	//
+	// Returns utils.APIError if the updating fails.
+	UpdateUserActivationStatus(ctx context.Context, id uuid.UUID, newStatus bool) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -230,7 +235,7 @@ func (s *DefaultUserService) GetUserById(ctx context.Context, id uuid.UUID) (*mo
 	result, err := s.userRepository.GetUserById(ctx, id)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
+		return nil, utils.UserNotFoundAPIError()
 	case err != nil:
 		return nil, utils.InternalServerAPIError()
 	default:
@@ -242,7 +247,7 @@ func (s *DefaultUserService) GetUserByEmail(ctx context.Context, email string) (
 	result, err := s.userRepository.GetUserByEmail(ctx, email)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
+		return nil, utils.UserNotFoundAPIError()
 	case err != nil:
 		return nil, utils.InternalServerAPIError()
 	default:
@@ -254,7 +259,7 @@ func (s *DefaultUserService) GetUserByUsername(ctx context.Context, username str
 	result, err := s.userRepository.GetUserByUsername(ctx, username)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return nil, utils.NewAPIError("User not found.", fiber.StatusNotFound)
+		return nil, utils.UserNotFoundAPIError()
 	case err != nil:
 		return nil, utils.InternalServerAPIError()
 	default:
@@ -268,7 +273,7 @@ func (s *DefaultUserService) DeleteUser(ctx context.Context, id uuid.UUID) *util
 		return utils.InternalServerAPIError()
 	}
 	if !result {
-		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+		return utils.UserNotFoundAPIError()
 	}
 
 	return nil
@@ -298,7 +303,7 @@ func (s *DefaultUserService) UpdateUserEmail(ctx context.Context, id uuid.UUID, 
 	}
 
 	if !result {
-		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+		return utils.UserNotFoundAPIError()
 	}
 	return nil
 }
@@ -315,7 +320,7 @@ func (s *DefaultUserService) UpdateUserUsername(ctx context.Context, id uuid.UUI
 	}
 
 	if !result {
-		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+		return utils.UserNotFoundAPIError()
 	}
 	return nil
 }
@@ -326,7 +331,7 @@ func (s *DefaultUserService) UpdateUserRole(ctx context.Context, id uuid.UUID, n
 		return utils.InternalServerAPIError()
 	}
 	if !result {
-		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+		return utils.UserNotFoundAPIError()
 	}
 	return nil
 }
@@ -341,9 +346,20 @@ func (s *DefaultUserService) UpdateUserPassword(ctx context.Context, id uuid.UUI
 		return utils.InternalServerAPIError()
 	}
 	if !result {
-		return utils.NewAPIError("User not found.", fiber.StatusNotFound)
+		return utils.UserNotFoundAPIError()
 	}
 
+	return nil
+}
+
+func (s *DefaultUserService) UpdateUserActivationStatus(ctx context.Context, id uuid.UUID, newStatus bool) *utils.APIError {
+	result, err := s.userRepository.UpdateUserActivationStatus(ctx, id, newStatus)
+	if err != nil {
+		return utils.InternalServerAPIError()
+	}
+	if !result {
+		return utils.UserNotFoundAPIError()
+	}
 	return nil
 }
 

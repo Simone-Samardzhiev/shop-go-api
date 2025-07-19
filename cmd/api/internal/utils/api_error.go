@@ -40,3 +40,7 @@ func InvalidTokenAPIError() *APIError {
 func TooManyRequestsAPIError() *APIError {
 	return &APIError{"Too many requests.", fiber.StatusTooManyRequests}
 }
+
+func UserNotFoundAPIError() *APIError {
+	return &APIError{"User not found.", fiber.StatusNotFound}
+}
