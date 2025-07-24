@@ -75,6 +75,7 @@ func (a *API) start() error {
 	authGroup.Post("/register", a.Handlers.UserHandler.RegisterClient())
 	authGroup.Post("/login", a.Handlers.UserHandler.Login())
 	authGroup.Get("/refresh", middleware, a.Handlers.UserHandler.RefreshSession())
+	authGroup.Patch("/change-email", a.Handlers.UserHandler.ChangeEmail())
 
 	// Group related to admins used to manage users' data.
 	adminGroup := api.Group("/admins")

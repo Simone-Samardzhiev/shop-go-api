@@ -1729,3 +1729,122 @@ func FuzzDefaultUserHandler_UpdateUserActivationStatus(f *testing.F) {
 		}
 	})
 }
+
+func TestDefaultUserHandler_ChangeEmail(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Patch("/change-email", handler.ChangeEmail())
+
+	type payload struct {
+		Email string `json:"email"`
+		*models.LoginUserPayload
+	}
+
+	tests := []struct {
+		name           string
+		payload        *payload
+		expectedStatus int
+	}{
+		{
+			name: "Change email with correct credentials",
+			payload: &payload{
+				Email:            "NewEmail@example.com",
+				LoginUserPayload: models.NewLoginUserPayload("john_doe", "Password1!"),
+			},
+			expectedStatus: fiber.StatusOK,
+		}, {
+			name: "Change email with correct credentials and invalid new email",
+			payload: &payload{
+				Email:            "NewEmail@example",
+				LoginUserPayload: models.NewLoginUserPayload("john_doe", "Password1!"),
+			},
+			expectedStatus: fiber.StatusBadRequest,
+		}, {
+			name: "Change email with correct credentials and deactivated user",
+			payload: &payload{
+				Email:            "NewEmail@example.com",
+				LoginUserPayload: models.NewLoginUserPayload("jane_s", "SecurePass2@"),
+			},
+			expectedStatus: fiber.StatusForbidden,
+		}, {
+			name: "Change email with incorrect credentials",
+			payload: &payload{
+				Email:            "NewEmail@exmaple.com",
+				LoginUserPayload: models.NewLoginUserPayload("john_doe", "Pass!"),
+			},
+			expectedStatus: fiber.StatusUnauthorized,
+		}, {
+			name: "Change email with correct credentials and conflict",
+			payload: &payload{
+				Email:            "jane_smith@example.com",
+				LoginUserPayload: models.NewLoginUserPayload("john_doe", "Password1!"),
+			},
+			expectedStatus: fiber.StatusConflict,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/change-email", "PATCH", "", test.payload)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_ChangeEmail(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Patch("/change-email", handler.ChangeEmail())
+
+	for b.Loop() {
+		payload := struct {
+			Email string `json:"email"`
+			*models.LoginUserPayload
+		}{
+			Email:            "NewEmail@example.com",
+			LoginUserPayload: models.NewLoginUserPayload("john_doe", "Password1!"),
+		}
+
+		_, requestErr := testutils.SendRequest(app, "/change-email", "PATCH", "", payload)
+		if requestErr != nil {
+			b.Fatalf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_ChangeEmail(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Patch("/change-email", handler.ChangeEmail())
+
+	f.Add("email", "username", "password")
+	f.Add("", "", "")
+	f.Fuzz(func(t *testing.T, email, username, password string) {
+		payload := struct {
+			Email string `json:"email"`
+			*models.LoginUserPayload
+		}{
+			Email:            email,
+			LoginUserPayload: models.NewLoginUserPayload(username, password),
+		}
+
+		_, requestErr := testutils.SendRequest(app, "/change-email", "PATCH", "", payload)
+		if requestErr != nil {
+			t.Fatalf("Error sending request: %v", requestErr)
+		}
+	})
+}

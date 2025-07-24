@@ -559,3 +559,44 @@ func TestDefaultUserService_UpdateUserStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultUserService_ChangeUserEmail(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name     string
+		email    string
+		payload  *models.LoginUserPayload
+		expected *utils.APIError
+	}{
+		{
+			name:     "Update email with valid credentials",
+			email:    "NewEmail@exmaple.com",
+			payload:  models.NewLoginUserPayload("john_doe", "Password1!"),
+			expected: nil,
+		}, {
+			name:     "Update email with valid credentials and deactivated user.",
+			email:    "NewEmail",
+			payload:  models.NewLoginUserPayload("jane_s", "SecurePass2@"),
+			expected: utils.NewAPIError("User is not active.", fiber.StatusForbidden),
+		}, {
+			name:     "Update email with valid credentials and duplicate email",
+			email:    "jane_smith@example.com",
+			payload:  models.NewLoginUserPayload("john_doe", "Password1!"),
+			expected: utils.NewAPIError("Email already in use.", fiber.StatusConflict),
+		}, {
+			name:     "Update email with invalid credentials",
+			email:    "NewEmail",
+			payload:  models.NewLoginUserPayload("john_doe", "Password1"),
+			expected: utils.WrongCredentialsAPIError(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			apiError := service.ChangeUserEmail(context.Background(), test.payload, test.email)
+			if !reflect.DeepEqual(apiError, test.expected) {
+				t.Errorf("Expected error %v, got %v", test.expected, apiError)
+			}
+		})
+	}
+}

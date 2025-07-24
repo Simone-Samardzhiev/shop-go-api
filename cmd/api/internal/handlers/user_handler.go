@@ -59,6 +59,9 @@ type UserHandler interface {
 
 	// UpdateUserActivationStatus returns a handler used by admins to change the activation status of a user.
 	UpdateUserActivationStatus() fiber.Handler
+
+	// ChangeEmail used by user to change their email.
+	ChangeEmail() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -459,6 +462,32 @@ func (h *DefaultUserHandler) UpdateUserActivationStatus() fiber.Handler {
 		}
 
 		apiError := h.service.UpdateUserActivationStatus(c.Context(), payload.Id, payload.Status)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) ChangeEmail() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var payload struct {
+			Email string `json:"email"`
+			models.LoginUserPayload
+		}
+
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		if !validate.Email(payload.Email) {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid email.", fiber.StatusBadRequest))
+		}
+
+		apiError := h.service.ChangeUserEmail(c.Context(), &payload.LoginUserPayload, payload.Email)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
