@@ -41,6 +41,12 @@ func TooManyRequestsAPIError() *APIError {
 	return &APIError{"Too many requests.", fiber.StatusTooManyRequests}
 }
 
+// UserNotFoundAPIError is the standard way of return if the user was not found.
 func UserNotFoundAPIError() *APIError {
 	return &APIError{"User not found.", fiber.StatusNotFound}
+}
+
+// WrongCredentialsAPIError is the standard way of return if the user's credentials are incorrect.
+func WrongCredentialsAPIError() *APIError {
+	return &APIError{"Wrong username or password.", fiber.StatusUnauthorized}
 }

@@ -166,21 +166,30 @@ func (s *DefaultUserService) createTokenGroup(ctx context.Context, sub uuid.UUID
 	return models.NewTokenGroup(refreshToken, accessToken), nil
 }
 
-func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUserPayload) (*models.TokenGroup, *utils.APIError) {
+func (s *DefaultUserService) validateUserLoginPayload(ctx context.Context, payload *models.LoginUserPayload) (*models.User, *utils.APIError) {
 	fetchedUser, err := s.userRepository.GetUserByUsername(ctx, payload.Username)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return nil, utils.NewAPIError("Wrong credentials.", fiber.StatusUnauthorized)
+		return nil, utils.WrongCredentialsAPIError()
 	case err != nil:
 		return nil, utils.InternalServerAPIError()
 	}
 
-	if !auth.VerifyPassword(payload.Password, fetchedUser.Password) {
-		return nil, utils.NewAPIError("Wrong credentials.", fiber.StatusUnauthorized)
-	}
-
 	if !fetchedUser.Active {
 		return nil, utils.NewAPIError("User is not active.", fiber.StatusForbidden)
+	}
+
+	if !auth.VerifyPassword(payload.Password, fetchedUser.Password) {
+		return nil, utils.WrongCredentialsAPIError()
+	}
+
+	return fetchedUser, nil
+}
+
+func (s *DefaultUserService) Login(ctx context.Context, payload *models.LoginUserPayload) (*models.TokenGroup, *utils.APIError) {
+	fetchedUser, apiError := s.validateUserLoginPayload(ctx, payload)
+	if apiError != nil {
+		return nil, apiError
 	}
 
 	return s.createTokenGroup(ctx, fetchedUser.Id, fetchedUser.Role)
