@@ -296,7 +296,7 @@ func (s *DefaultUserService) UpdateUserEmail(ctx context.Context, id uuid.UUID, 
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-			return utils.NewAPIError("Email already in user", fiber.StatusConflict)
+			return utils.NewAPIError("Email already in use.", fiber.StatusConflict)
 		} else {
 			return utils.InternalServerAPIError()
 		}
@@ -313,7 +313,7 @@ func (s *DefaultUserService) UpdateUserUsername(ctx context.Context, id uuid.UUI
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-			return utils.NewAPIError("Username already in user", fiber.StatusConflict)
+			return utils.NewAPIError("Username already in use.", fiber.StatusConflict)
 		} else {
 			return utils.InternalServerAPIError()
 		}

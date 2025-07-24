@@ -412,7 +412,7 @@ func TestDefaultUserService_UpdateUserEmail(t *testing.T) {
 			name:     "Update a user with already existing username",
 			email:    "jane_smith@example.com",
 			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
-			expected: utils.NewAPIError("Email already in user", fiber.StatusConflict),
+			expected: utils.NewAPIError("Email already in use.", fiber.StatusConflict),
 		}, {
 			name:     "Update a non-existing user",
 			email:    "",
@@ -448,7 +448,7 @@ func TestDefaultUserService_UpdateUserUsername(t *testing.T) {
 			name:     "Update a user with already existing username",
 			username: "alexw",
 			id:       uuid.MustParse("a1b2c3d4-e5f6-7890-1234-567890abcdef"),
-			expected: utils.NewAPIError("Username already in user", fiber.StatusConflict),
+			expected: utils.NewAPIError("Username already in use.", fiber.StatusConflict),
 		}, {
 			name:     "Update a non-existing user",
 			username: "",
