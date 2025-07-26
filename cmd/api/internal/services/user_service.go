@@ -92,10 +92,15 @@ type UserService interface {
 	// Returns utils.APIError if the updating fails.
 	UpdateUserActivationStatus(ctx context.Context, id uuid.UUID, newStatus bool) *utils.APIError
 
-	// ChangeUserEmail updates the email of a user by the provided credentials.
+	// ChangeUserEmail updates the username of a user by the provided credentials.
 	//
 	// Returns utils.APIError if the credentials are incorrect or updating fails.
 	ChangeUserEmail(ctx context.Context, payload *models.LoginUserPayload, newEmail string) *utils.APIError
+
+	// ChangeUserUsername updates the username of a user by the provided credentials.
+	//
+	// Returns utils.APIError if the credentials are incorrect or updating fails.
+	ChangeUserUsername(ctx context.Context, payload *models.LoginUserPayload, newUsername string) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -310,7 +315,7 @@ func (s *DefaultUserService) UpdateUserEmail(ctx context.Context, id uuid.UUID, 
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-			return utils.NewAPIError("Email already in use.", fiber.StatusConflict)
+			return utils.NewAPIError("NewEmail already in use.", fiber.StatusConflict)
 		} else {
 			return utils.InternalServerAPIError()
 		}
@@ -327,7 +332,7 @@ func (s *DefaultUserService) UpdateUserUsername(ctx context.Context, id uuid.UUI
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-			return utils.NewAPIError("Username already in use.", fiber.StatusConflict)
+			return utils.NewAPIError("NewUsername already in use.", fiber.StatusConflict)
 		} else {
 			return utils.InternalServerAPIError()
 		}
@@ -386,7 +391,24 @@ func (s *DefaultUserService) ChangeUserEmail(ctx context.Context, payload *model
 	result, err := s.userRepository.UpdateUserEmail(ctx, fetchedUser.Id, newEmail)
 	var pqErr *pq.Error
 	if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-		return utils.NewAPIError("Email already in use.", fiber.StatusConflict)
+		return utils.NewAPIError("NewEmail already in use.", fiber.StatusConflict)
+	} else if err != nil || !result {
+		return utils.InternalServerAPIError()
+	}
+
+	return nil
+}
+
+func (s *DefaultUserService) ChangeUserUsername(ctx context.Context, payload *models.LoginUserPayload, newUsername string) *utils.APIError {
+	fetchedUser, apiErr := s.validateUserLoginPayload(ctx, payload)
+	if apiErr != nil {
+		return apiErr
+	}
+
+	result, err := s.userRepository.UpdateUserUsername(ctx, fetchedUser.Id, newUsername)
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+		return utils.NewAPIError("NewUsername already in use.", fiber.StatusConflict)
 	} else if err != nil || !result {
 		return utils.InternalServerAPIError()
 	}

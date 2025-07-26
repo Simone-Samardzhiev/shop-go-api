@@ -60,8 +60,11 @@ type UserHandler interface {
 	// UpdateUserActivationStatus returns a handler used by admins to change the activation status of a user.
 	UpdateUserActivationStatus() fiber.Handler
 
-	// ChangeEmail used by user to change their email.
+	// ChangeEmail used by users to change their email.
 	ChangeEmail() fiber.Handler
+
+	// ChangeUsername used by users to change their username.
+	ChangeUsername() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -474,7 +477,7 @@ func (h *DefaultUserHandler) UpdateUserActivationStatus() fiber.Handler {
 func (h *DefaultUserHandler) ChangeEmail() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var payload struct {
-			Email string `json:"email"`
+			NewEmail string `json:"new_email"`
 			models.LoginUserPayload
 		}
 
@@ -483,11 +486,37 @@ func (h *DefaultUserHandler) ChangeEmail() fiber.Handler {
 			return err
 		}
 
-		if !validate.Email(payload.Email) {
+		if !validate.Email(payload.NewEmail) {
 			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid email.", fiber.StatusBadRequest))
 		}
 
-		apiError := h.service.ChangeUserEmail(c.Context(), &payload.LoginUserPayload, payload.Email)
+		apiError := h.service.ChangeUserEmail(c.Context(), &payload.LoginUserPayload, payload.NewEmail)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) ChangeUsername() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var payload struct {
+			NewUsername string `json:"new_username"`
+			models.LoginUserPayload
+		}
+
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		if !validate.Username(payload.NewUsername) {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid username", fiber.StatusBadRequest))
+		}
+
+		apiError := h.service.ChangeUserUsername(c.Context(), &payload.LoginUserPayload, payload.NewUsername)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}
