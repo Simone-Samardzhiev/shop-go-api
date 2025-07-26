@@ -641,3 +641,34 @@ func TestDefaultUserService_ChangeUserUsername(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultUserService_ChangeUserPassword(t *testing.T) {
+	service := DefaultUserService(t)
+	tests := []struct {
+		name     string
+		password string
+		payload  *models.LoginUserPayload
+		expected *utils.APIError
+	}{
+		{
+			name:     "Update password with valid credentials",
+			password: "Password1!",
+			payload:  models.NewLoginUserPayload("john_doe", "Password1!"),
+			expected: nil,
+		}, {
+			name:     "Update password with wrong credentials",
+			password: "Password1!",
+			payload:  models.NewLoginUserPayload("john_doe", "Password1"),
+			expected: utils.WrongCredentialsAPIError(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			apiError := service.ChangeUserPassword(context.Background(), test.payload, test.password)
+			if !reflect.DeepEqual(apiError, test.expected) {
+				t.Errorf("Expected error %v, got %v", test.expected, apiError)
+			}
+		})
+	}
+}

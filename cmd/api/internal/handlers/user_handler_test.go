@@ -1967,3 +1967,108 @@ func FuzzDefaultUserHandler_ChangeUsername(f *testing.F) {
 		}
 	})
 }
+
+func TestDefaultUserHandler_ChangePassword(t *testing.T) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		t.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Patch("/change-password", handler.ChangePassword())
+
+	type payload struct {
+		NewPassword string `json:"new_password"`
+		*models.LoginUserPayload
+	}
+
+	tests := []struct {
+		name           string
+		payload        *payload
+		expectedStatus int
+	}{
+		{
+			name: "Change password with correct credentials",
+			payload: &payload{
+				NewPassword:      "Password1!",
+				LoginUserPayload: models.NewLoginUserPayload("john_doe", "Password1!"),
+			},
+			expectedStatus: fiber.StatusOK,
+		}, {
+			name: "Change password with incorrect credentials",
+			payload: &payload{
+				NewPassword:      "Password1!",
+				LoginUserPayload: models.NewLoginUserPayload("john_doe", "Password1"),
+			},
+			expectedStatus: fiber.StatusUnauthorized,
+		}, {
+			name: "Change with invalid password",
+			payload: &payload{
+				NewPassword:      "Pass",
+				LoginUserPayload: models.NewLoginUserPayload("john_doe", "Password1"),
+			},
+			expectedStatus: fiber.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			res, requestErr := testutils.SendRequest(app, "/change-password", "PATCH", "", test.payload)
+			if requestErr != nil {
+				t.Fatalf("Error sending request: %v", requestErr)
+			}
+			if res.StatusCode != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, res.StatusCode)
+			}
+		})
+	}
+}
+
+func BenchmarkDefaultUserHandler_ChangePassword(b *testing.B) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		b.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Patch("/change-password", handler.ChangePassword())
+	for b.Loop() {
+		payload := struct {
+			NewPassword string `json:"new_password"`
+			*models.LoginUserPayload
+		}{
+			NewPassword:      "Password1!",
+			LoginUserPayload: models.NewLoginUserPayload("john_doe", "Password1!"),
+		}
+
+		_, requestErr := testutils.SendRequest(app, "/change-password", "PATCH", "", payload)
+		if requestErr != nil {
+			b.Fatalf("Error sending request: %v", requestErr)
+		}
+	}
+}
+
+func FuzzDefaultUserHandler_ChangePassword(f *testing.F) {
+	handler, err := DefaultUserHandler()
+	if err != nil {
+		f.Fatalf("Error creating user handler: %v", err)
+	}
+	app := fiber.New()
+	app.Patch("/change-password", handler.ChangePassword())
+
+	f.Add("newPassword", "username", "password")
+	f.Add("", "", "")
+
+	f.Fuzz(func(t *testing.T, newPassword, username, password string) {
+		payload := struct {
+			NewPassword string `json:"new_password"`
+			*models.LoginUserPayload
+		}{
+			NewPassword:      newPassword,
+			LoginUserPayload: models.NewLoginUserPayload(username, password),
+		}
+
+		_, requestErr := testutils.SendRequest(app, "/change-password", "PATCH", "", payload)
+		if requestErr != nil {
+			t.Fatalf("Error sending request: %v", requestErr)
+		}
+	})
+}

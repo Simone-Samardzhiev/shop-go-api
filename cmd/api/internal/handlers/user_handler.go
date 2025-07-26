@@ -65,6 +65,9 @@ type UserHandler interface {
 
 	// ChangeUsername used by users to change their username.
 	ChangeUsername() fiber.Handler
+
+	// ChangePassword used by users to change their password.
+	ChangePassword() fiber.Handler
 }
 
 // DefaultUserHandler is default implementation of UserHandler.
@@ -513,10 +516,35 @@ func (h *DefaultUserHandler) ChangeUsername() fiber.Handler {
 		}
 
 		if !validate.Username(payload.NewUsername) {
-			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid username", fiber.StatusBadRequest))
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid username.", fiber.StatusBadRequest))
 		}
 
 		apiError := h.service.ChangeUserUsername(c.Context(), &payload.LoginUserPayload, payload.NewUsername)
+		if apiError != nil {
+			return c.Status(apiError.Status).JSON(apiError)
+		}
+
+		c.Status(fiber.StatusOK)
+		return nil
+	}
+}
+
+func (h *DefaultUserHandler) ChangePassword() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var payload struct {
+			NewPassword string `json:"new_password"`
+			models.LoginUserPayload
+		}
+		err := c.BodyParser(&payload)
+		if err != nil {
+			return err
+		}
+
+		if !validate.Password(payload.NewPassword) {
+			return c.Status(fiber.StatusBadRequest).JSON(utils.NewAPIError("Invalid password.", fiber.StatusBadRequest))
+		}
+
+		apiError := h.service.ChangeUserPassword(c.Context(), &payload.LoginUserPayload, payload.NewPassword)
 		if apiError != nil {
 			return c.Status(apiError.Status).JSON(apiError)
 		}

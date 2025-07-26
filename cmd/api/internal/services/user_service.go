@@ -101,6 +101,11 @@ type UserService interface {
 	//
 	// Returns utils.APIError if the credentials are incorrect or updating fails.
 	ChangeUserUsername(ctx context.Context, payload *models.LoginUserPayload, newUsername string) *utils.APIError
+
+	// ChangeUserPassword updates the password of a user by the provided credentials.
+	//
+	// Returns utils.APIError if the credentials are incorrect or updating fails.
+	ChangeUserPassword(ctx context.Context, payload *models.LoginUserPayload, newPassword string) *utils.APIError
 }
 
 // DefaultUserService is a default implementation of UserService.
@@ -410,6 +415,25 @@ func (s *DefaultUserService) ChangeUserUsername(ctx context.Context, payload *mo
 	if errors.As(err, &pqErr) && pqErr.Code == "23505" {
 		return utils.NewAPIError("NewUsername already in use.", fiber.StatusConflict)
 	} else if err != nil || !result {
+		return utils.InternalServerAPIError()
+	}
+
+	return nil
+}
+
+func (s *DefaultUserService) ChangeUserPassword(ctx context.Context, payload *models.LoginUserPayload, newPassword string) *utils.APIError {
+	hash, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return utils.InternalServerAPIError()
+	}
+
+	fetchedUser, apiErr := s.validateUserLoginPayload(ctx, payload)
+	if apiErr != nil {
+		return apiErr
+	}
+
+	result, err := s.userRepository.UpdateUserPassword(ctx, fetchedUser.Id, hash)
+	if err != nil || !result {
 		return utils.InternalServerAPIError()
 	}
 
